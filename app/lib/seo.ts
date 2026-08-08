@@ -156,36 +156,82 @@ export function websiteJsonLd(origin: string) {
   };
 }
 
+/** On-page + structured-data FAQ copy (keep questions answerable and keyword-rich). */
+export const SITE_FAQS: ReadonlyArray<{ question: string; answer: string }> = [
+  {
+    question: "How do I calculate 3D printing cost?",
+    answer:
+      "Enter material usage (grams for FDM or millilitres for SLA), print time, and your rates for machine time, labor, electricity, and markup. The 3D Printing Calculator totals material, hardware, packaging, labor, machine, and electricity costs with optional failure uplift, service fees, and VAT.",
+  },
+  {
+    question: "What is the 3D Printing Calculator app?",
+    answer:
+      "3D Printing Calculator is a free online cost estimator for FDM and SLA print shops. Guests can price jobs and print quotes in the browser; signed-in users can save projects, materials inventory, customers, and invoices.",
+  },
+  {
+    question: "Is this 3D print cost calculator free to use?",
+    answer:
+      "Yes. You can estimate filament or resin cost, machine time, labor, and electricity for free without an account. Creating a free account unlocks saved projects, inventory, customers, and PDF-ready invoices.",
+  },
+  {
+    question: "Does this work for FDM and SLA printers?",
+    answer:
+      "Yes. Switch each print between FDM (filament by weight) and SLA (resin by volume), mix technologies in one project, and price materials from your inventory or custom rates.",
+  },
+  {
+    question: "Can I import Bambu Studio or OrcaSlicer files?",
+    answer:
+      "Yes. Upload 3MF or G-code exports from Bambu Studio or OrcaSlicer to auto-fill filament weight, resin volume, and estimated print time from slicer metadata.",
+  },
+  {
+    question: "How is filament cost calculated per gram or kilogram?",
+    answer:
+      "Filament cost = (weight in grams ÷ 1000) × your price per kilogram. Add multiple filament lines when a print uses several materials or colors, and match them to your inventory prices.",
+  },
+  {
+    question: "How do I price resin / SLA prints?",
+    answer:
+      "Choose Resin · SLA on a print, enter volume in millilitres, and set cost per litre. Optional support-waste percent and per-print consumables (IPA, gloves, FEP) can be included from Advanced Settings.",
+  },
+  {
+    question: "What costs are included in a print quote?",
+    answer:
+      "Each estimate can include material, hardware, packaging, labor, machine depreciation or hourly rate, electricity (watts × hours × kWh rate), failure uplift, percent or fixed service fee, and VAT—shown as a clear cost breakdown.",
+  },
+  {
+    question: "Can I save projects, customers, and material inventory?",
+    answer:
+      "With Google sign-in you can save multi-print projects, keep filament and resin inventory with prices and colors, attach customers, and reopen quotes or invoices later. Guest mode keeps everything in the current browser session.",
+  },
+  {
+    question: "Can I export or print a customer quote?",
+    answer:
+      "Yes. Guests can use the browser print quote. Signed-in users can open a printable invoice for saved projects to share or save as PDF.",
+  },
+  {
+    question: "Who is this filament and resin cost estimator for?",
+    answer:
+      "It is built for print farms, makerspaces, freelance 3D printing businesses, and makers who need fast, transparent quotes without maintaining a complex spreadsheet.",
+  },
+  {
+    question: "Do I need an account to get a print cost estimate?",
+    answer:
+      "No. Open the calculator, enter material and time (or import a slicer file when signed in), set your shop rates, and see the total immediately. Sign in only when you want to save work across devices.",
+  },
+];
+
 export function faqJsonLd() {
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    mainEntity: [
-      {
-        "@type": "Question",
-        name: "How do I calculate 3D printing cost?",
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: "Enter material usage (grams or millilitres), print time, and your rates for machine time, labor, electricity, and markup. The calculator totals material, hardware, packaging, labor, machine, and electricity costs with optional VAT.",
-        },
+    mainEntity: SITE_FAQS.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: item.answer,
       },
-      {
-        "@type": "Question",
-        name: "Does this work for FDM and SLA printers?",
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: "Yes. Switch each print between FDM (filament by weight) and SLA (resin by volume) and price materials from your inventory or custom rates.",
-        },
-      },
-      {
-        "@type": "Question",
-        name: "Can I import Bambu Studio or OrcaSlicer files?",
-        acceptedAnswer: {
-          "@type": "Answer",
-          text: "Yes. Upload 3MF or G-code exports to auto-fill filament weight, resin volume, and print time from slicer metadata.",
-        },
-      },
-    ],
+    })),
   };
 }
 

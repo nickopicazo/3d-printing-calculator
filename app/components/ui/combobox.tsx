@@ -21,6 +21,8 @@ import {
 export type ComboboxOption = {
   value: string;
   label: string;
+  /** Extra text matched by search (not shown in the closed trigger). */
+  keywords?: string;
 };
 
 type ComboboxProps = {
@@ -52,9 +54,12 @@ export function Combobox({
   const selected = options.find((o) => o.value === value || o.label === value);
   const display = selected?.label ?? (value || placeholder);
 
-  const filtered = options.filter((o) =>
-    o.label.toLowerCase().includes(query.toLowerCase()),
-  );
+  const filtered = options.filter((o) => {
+    const q = query.toLowerCase().trim();
+    if (!q) return true;
+    const haystack = `${o.label} ${o.value} ${o.keywords ?? ""}`.toLowerCase();
+    return haystack.includes(q);
+  });
 
   const showCustom =
     allowCustom &&
@@ -80,7 +85,13 @@ export function Combobox({
           <ChevronsUpDown className="opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+      <PopoverContent
+        className={cn(
+          "w-[var(--radix-popover-trigger-width)] p-0",
+          "min-w-[16rem]",
+        )}
+        align="start"
+      >
         <Command shouldFilter={false}>
           <CommandInput
             placeholder={searchPlaceholder}
@@ -107,6 +118,11 @@ export function Combobox({
                     )}
                   />
                   {option.label}
+                  {option.keywords ? (
+                    <span className="ml-2 truncate text-[var(--color-ink-muted)]">
+                      {option.keywords}
+                    </span>
+                  ) : null}
                 </CommandItem>
               ))}
               {showCustom ? (

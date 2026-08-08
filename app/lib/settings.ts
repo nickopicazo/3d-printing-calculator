@@ -1,5 +1,6 @@
 export type AppSettings = {
   currencyCode: string;
+  /** Derived from currencyCode via Intl; kept for display convenience. */
   currencySymbol: string;
   machineRatePerHour: number;
   markupPercent: number;
@@ -18,15 +19,96 @@ export type AppSettings = {
   defaultResinPricePerLitre: number;
 };
 
+/** Resolve a display symbol (e.g. ₱, $) from an ISO 4217 currency code. */
+export function currencySymbolForCode(code: string): string {
+  const currency = (code || "PHP").trim().toUpperCase().slice(0, 3) || "PHP";
+  try {
+    const parts = new Intl.NumberFormat(undefined, {
+      style: "currency",
+      currency,
+      currencyDisplay: "narrowSymbol",
+    }).formatToParts(0);
+    return parts.find((p) => p.type === "currency")?.value ?? currency;
+  } catch {
+    return currency;
+  }
+}
+
+const PRIORITY_CURRENCIES = [
+  "PHP",
+  "USD",
+  "EUR",
+  "GBP",
+  "JPY",
+  "CNY",
+  "AUD",
+  "CAD",
+  "SGD",
+  "HKD",
+  "KRW",
+  "INR",
+  "AED",
+  "CHF",
+  "NZD",
+];
+
+export type CurrencyOption = {
+  code: string;
+  symbol: string;
+  name: string;
+  label: string;
+};
+
+let cachedCurrencies: CurrencyOption[] | null = null;
+
+/** All ISO currencies supported by the runtime, with symbol + localized name. */
+export function listCurrencies(): CurrencyOption[] {
+  if (cachedCurrencies) return cachedCurrencies;
+
+  const codes =
+    typeof Intl !== "undefined" && "supportedValuesOf" in Intl
+      ? (Intl.supportedValuesOf("currency") as string[])
+      : [...PRIORITY_CURRENCIES];
+
+  const displayNames =
+    typeof Intl !== "undefined" && "DisplayNames" in Intl
+      ? new Intl.DisplayNames(undefined, { type: "currency" })
+      : null;
+
+  const priority = new Map(PRIORITY_CURRENCIES.map((c, i) => [c, i]));
+
+  cachedCurrencies = codes
+    .map((code) => {
+      const symbol = currencySymbolForCode(code);
+      const name = displayNames?.of(code) ?? code;
+      return {
+        code,
+        symbol,
+        name,
+        label: `${code} · ${symbol} · ${name}`,
+      };
+    })
+    .sort((a, b) => {
+      const pa = priority.get(a.code);
+      const pb = priority.get(b.code);
+      if (pa != null && pb != null) return pa - pb;
+      if (pa != null) return -1;
+      if (pb != null) return 1;
+      return a.code.localeCompare(b.code);
+    });
+
+  return cachedCurrencies;
+}
+
 export const DEFAULT_SETTINGS: AppSettings = {
   currencyCode: "PHP",
-  currencySymbol: "₱",
+  currencySymbol: currencySymbolForCode("PHP"),
   machineRatePerHour: 50,
   markupPercent: 20,
   vatRate: 0,
-  laborRatePerHour: 150,
-  powerWatts: 200,
-  electricityPerKwh: 12,
+  laborRatePerHour: 0,
+  powerWatts: 0,
+  electricityPerKwh: 0,
   failurePercent: 0,
   printerPurchasePrice: 0,
   printerLifespanHours: 5000,
@@ -63,9 +145,12 @@ export function normalizeSettings(
       .trim()
       .toUpperCase()
       .slice(0, 8),
-    currencySymbol: (merged.currencySymbol || DEFAULT_SETTINGS.currencySymbol)
-      .trim()
-      .slice(0, 4),
+    currencySymbol: currencySymbolForCode(
+      (merged.currencyCode || DEFAULT_SETTINGS.currencyCode)
+        .trim()
+        .toUpperCase()
+        .slice(0, 8),
+    ),
     machineRatePerHour: num(
       merged.machineRatePerHour,
       DEFAULT_SETTINGS.machineRatePerHour,

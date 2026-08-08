@@ -205,11 +205,24 @@ export function calculateProject(
 
 export function formatMoney(
   amount: number,
-  currencySymbol: string,
+  currencyCodeOrSymbol: string,
   fractionDigits = 2,
 ): string {
   const value = Number.isFinite(amount) ? amount : 0;
-  return `${currencySymbol}${value.toFixed(fractionDigits)}`;
+  const token = (currencyCodeOrSymbol || "").trim();
+  if (/^[A-Za-z]{3}$/.test(token)) {
+    try {
+      return new Intl.NumberFormat(undefined, {
+        style: "currency",
+        currency: token.toUpperCase(),
+        minimumFractionDigits: fractionDigits,
+        maximumFractionDigits: fractionDigits,
+      }).format(value);
+    } catch {
+      /* fall through to symbol prefix */
+    }
+  }
+  return `${token}${value.toFixed(fractionDigits)}`;
 }
 
 export function createId(prefix = "id"): string {
@@ -336,6 +349,7 @@ export const SLA_MATERIALS = [
 ] as const;
 
 export const PRINTER_PRESETS = [
+  "Bambu Lab H2S",
   "Bambu Lab X1 Carbon",
   "Bambu Lab P1S",
   "Bambu Lab A1",

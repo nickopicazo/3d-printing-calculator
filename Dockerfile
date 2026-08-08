@@ -19,6 +19,8 @@ ENV NODE_ENV=production
 COPY ./package.json package-lock.json /app/
 COPY --from=production-dependencies-env /app/node_modules /app/node_modules
 COPY --from=build-env /app/build /app/build
+COPY ./drizzle /app/drizzle
+COPY ./scripts/migrate.mjs /app/scripts/migrate.mjs
 WORKDIR /app
 RUN mkdir -p /app/uploads
 ENV UPLOAD_DIR=/app/uploads

@@ -154,10 +154,5 @@ railway.toml
 1. Add Postgres and set `DATABASE_URL`
 2. Set `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` (public domain), and Google OAuth vars
 3. Attach a volume at `/app/uploads` and set `UPLOAD_DIR=/app/uploads`
-4. Run `npm run db:push` (or migrate) once against production
-5. Build with the included `Dockerfile` (`railway.toml` uses Docker builder; healthcheck `/`)
-
-```bash
-npm run build
-npm start   # serves on port 3000 in the container
-```
+4. Build with the included `Dockerfile` (`railway.toml` uses Docker builder; healthcheck `/`)
+5. On start, the container runs Drizzle migrations then serves on port 3000

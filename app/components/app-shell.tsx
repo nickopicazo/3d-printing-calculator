@@ -66,10 +66,10 @@ export function AppShell({
             <div className="flex min-w-0 items-center gap-4 md:gap-6">
               <Link
                 to="/"
-                className="flex items-center gap-2.5 font-display text-lg font-extrabold tracking-tight"
+                className="flex min-w-0 items-center gap-2.5 font-display text-base font-extrabold tracking-tight sm:text-lg"
               >
                 <BrandMark />
-                <span>PrintCost</span>
+                <span className="truncate">3D Printing Calculator</span>
               </Link>
 
               <nav className="hidden items-center gap-1 rounded-full bg-white/80 p-1 shadow-[0_4px_20px_rgba(22,22,26,0.04)] ring-1 ring-[var(--color-line)] md:flex">

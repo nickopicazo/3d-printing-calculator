@@ -20,5 +20,8 @@ COPY ./package.json package-lock.json /app/
 COPY --from=production-dependencies-env /app/node_modules /app/node_modules
 COPY --from=build-env /app/build /app/build
 WORKDIR /app
+RUN mkdir -p /app/uploads
+ENV UPLOAD_DIR=/app/uploads
 EXPOSE 3000
+VOLUME ["/app/uploads"]
 CMD ["npm", "run", "start"]

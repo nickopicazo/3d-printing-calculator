@@ -26,13 +26,17 @@ import {
 } from "~/components/ui/select";
 import { db } from "~/db/index.server";
 import { customers, printPlates, prints, projects } from "~/db/schema";
+import { withParentMeta } from "~/lib/seo";
 import { formatMoney } from "~/lib/pricing";
 import { requireUser } from "~/lib/session.server";
 import { DEFAULT_SETTINGS } from "~/lib/settings";
 
 
-export function meta({}: Route.MetaArgs) {
-  return [{ title: "Projects · 3D Printing Calculator" }];
+export function meta({ matches }: Route.MetaArgs) {
+  return withParentMeta(matches, [
+    { title: "Projects · 3D Printing Calculator" },
+    { name: "robots", content: "noindex,nofollow" },
+  ]);
 }
 
 export async function loader({ request }: Route.LoaderArgs) {

@@ -30,13 +30,17 @@ import {
 } from "~/components/ui/select";
 import { db } from "~/db/index.server";
 import { materials } from "~/db/schema";
+import { withParentMeta } from "~/lib/seo";
 import { formatMoney } from "~/lib/pricing";
 import { newId, requireUser } from "~/lib/session.server";
 import { DEFAULT_SETTINGS } from "~/lib/settings";
 import { cn } from "~/lib/utils";
 
-export function meta({}: Route.MetaArgs) {
-  return [{ title: "Materials · 3D Printing Calculator" }];
+export function meta({ matches }: Route.MetaArgs) {
+  return withParentMeta(matches, [
+    { title: "Materials · 3D Printing Calculator" },
+    { name: "robots", content: "noindex,nofollow" },
+  ]);
 }
 
 export async function loader({ request }: Route.LoaderArgs) {

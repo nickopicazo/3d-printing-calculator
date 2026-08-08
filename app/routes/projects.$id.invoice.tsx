@@ -13,10 +13,14 @@ import {
   projects,
 } from "~/db/schema";
 import { requireUser } from "~/lib/session.server";
+import { withParentMeta } from "~/lib/seo";
 import { DEFAULT_SETTINGS } from "~/lib/settings";
 
-export function meta({}: Route.MetaArgs) {
-  return [{ title: "Quote · 3D Printing Calculator" }];
+export function meta({ matches }: Route.MetaArgs) {
+  return withParentMeta(matches, [
+    { title: "Quote · 3D Printing Calculator" },
+    { name: "robots", content: "noindex,nofollow" },
+  ]);
 }
 
 export async function loader({ request, params }: Route.LoaderArgs) {

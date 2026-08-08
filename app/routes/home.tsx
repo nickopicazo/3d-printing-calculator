@@ -49,6 +49,7 @@ import {
   type SavedCustomer,
   type SavedProject,
 } from "~/lib/calculator-types";
+import { withParentMeta, SITE_DESCRIPTION, SITE_TITLE } from "~/lib/seo";
 import { createId, calculateProject } from "~/lib/pricing";
 import { minutesToHoursMinutes } from "~/lib/pricing";
 import { getSession } from "~/lib/session.server";
@@ -66,15 +67,11 @@ import {
   type ProjectFieldErrors,
 } from "~/lib/validate-project";
 
-export function meta({}: Route.MetaArgs) {
-  return [
-    { title: "3D Printing Calculator" },
-    {
-      name: "description",
-      content:
-        "Estimate FDM and SLA print costs with materials, labor, machine time, VAT, and PDF invoices.",
-    },
-  ];
+export function meta({ matches }: Route.MetaArgs) {
+  return withParentMeta(matches, [
+    { title: SITE_TITLE },
+    { name: "description", content: SITE_DESCRIPTION },
+  ]);
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -743,11 +740,12 @@ export default function Home() {
       <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="font-display text-3xl font-extrabold tracking-tight sm:text-4xl">
-            Welcome {firstName}
+            3D Printing Cost Calculator
           </h1>
           <p className="mt-1.5 text-sm text-[var(--color-ink-muted)]">
-            Calculator <span className="mx-1 opacity-40">›</span> Estimate Print
-            Costs
+            Welcome {firstName}
+            <span className="mx-1.5 opacity-40">·</span>
+            Estimate FDM &amp; SLA print costs
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -1231,6 +1229,86 @@ export default function Home() {
           ) : null}
         </aside>
       </div>
+
+      <section
+        aria-labelledby="seo-features-heading"
+        className="mt-14 space-y-8 border-t border-[var(--color-line)] pt-12"
+      >
+        <div className="max-w-2xl">
+          <h2
+            id="seo-features-heading"
+            className="font-display text-2xl font-extrabold tracking-tight"
+          >
+            Price every print with confidence
+          </h2>
+          <p className="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)]">
+            Built for print farms, makerspaces, and freelance 3D printing
+            businesses that need fast, transparent quotes—without a spreadsheet.
+          </p>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-3">
+          {[
+            {
+              title: "FDM & SLA ready",
+              body: "Price filament by the gram or resin by the millilitre, with per-print technology switching.",
+            },
+            {
+              title: "Import slicer exports",
+              body: "Drop in Bambu Studio or OrcaSlicer 3MF and G-code to auto-fill weight, volume, and time.",
+            },
+            {
+              title: "Shop-rate math",
+              body: "Include machine rate, labor, electricity, failure uplift, service fees, and VAT in one total.",
+            },
+          ].map((item) => (
+            <article
+              key={item.title}
+              className="rounded-2xl border border-[var(--color-line)] bg-white/70 p-5"
+            >
+              <h3 className="font-display text-base font-bold">{item.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)]">
+                {item.body}
+              </p>
+            </article>
+          ))}
+        </div>
+        <div className="max-w-2xl space-y-4">
+          <h2 className="font-display text-xl font-extrabold tracking-tight">
+            Frequently asked questions
+          </h2>
+          <div className="space-y-3">
+            <details className="rounded-xl border border-[var(--color-line)] bg-white/70 px-4 py-3">
+              <summary className="cursor-pointer font-semibold">
+                How do I calculate 3D printing cost?
+              </summary>
+              <p className="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)]">
+                Enter material usage, print time, and your rates for machine
+                time, labor, electricity, and markup. The calculator totals
+                material, hardware, packaging, labor, machine, and electricity
+                with optional VAT.
+              </p>
+            </details>
+            <details className="rounded-xl border border-[var(--color-line)] bg-white/70 px-4 py-3">
+              <summary className="cursor-pointer font-semibold">
+                Does this work for FDM and SLA?
+              </summary>
+              <p className="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)]">
+                Yes. Each print can be FDM (filament) or SLA (resin), and you
+                can mix technologies in one project quote.
+              </p>
+            </details>
+            <details className="rounded-xl border border-[var(--color-line)] bg-white/70 px-4 py-3">
+              <summary className="cursor-pointer font-semibold">
+                Can I import Bambu or Orca files?
+              </summary>
+              <p className="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)]">
+                Upload 3MF or G-code exports to pull filament weight, resin
+                volume, and estimated print time from slicer metadata.
+              </p>
+            </details>
+          </div>
+        </div>
+      </section>
 
       <GuestInvoicePrint
         projectName={project.name}

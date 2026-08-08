@@ -9,11 +9,20 @@ import {
   CardTitle,
 } from "~/components/ui/card";
 import { authClient } from "~/lib/auth-client";
+import { withParentMeta } from "~/lib/seo";
 import { getSession } from "~/lib/session.server";
 import { redirect } from "react-router";
 
-export function meta({}: Route.MetaArgs) {
-  return [{ title: "Sign In · 3D Printing Calculator" }];
+export function meta({ matches }: Route.MetaArgs) {
+  return withParentMeta(matches, [
+    { title: "Sign In · 3D Printing Calculator" },
+    {
+      name: "description",
+      content:
+        "Sign in with Google to save projects, materials, customers, and printable quotes.",
+    },
+    { name: "robots", content: "noindex,nofollow" },
+  ]);
 }
 
 export async function loader({ request }: Route.LoaderArgs) {

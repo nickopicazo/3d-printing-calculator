@@ -26,7 +26,8 @@
   --color-paper: #f0f0f2;
   --color-panel: #ffffff;
   --color-line: #e4e4e8;
-  --color-accent: #7c5cff;
+  /* #6f52f0 meets WCAG AA (4.5:1) with white button text; old #7c5cff was 4.34 */
+  --color-accent: #6f52f0;
   --color-accent-deep: #5b45e0;
   --color-lime: #c6f04d;
   --color-charcoal: #1e1e22;
@@ -203,7 +204,7 @@ body {
 
 .field-input:focus {
   border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px rgba(124, 92, 255, 0.18);
+  box-shadow: 0 0 0 3px rgba(111, 82, 240, 0.18);
 }
 
 .field-label {

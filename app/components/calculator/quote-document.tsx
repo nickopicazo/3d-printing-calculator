@@ -149,7 +149,7 @@ export function QuoteDocument({
                 width: 28,
                 height: 28,
                 borderRadius: 8,
-                background: "#7c5cff",
+                background: "#6f52f0",
                 color: "#fff",
                 fontSize: 13,
                 fontWeight: 800,
@@ -176,7 +176,7 @@ export function QuoteDocument({
               fontWeight: 700,
               letterSpacing: "0.12em",
               textTransform: "uppercase",
-              color: "#7c5cff",
+              color: "#6f52f0",
             }}
           >
             {documentLabel}
@@ -454,7 +454,7 @@ export function QuoteDocument({
                 fontWeight: 700,
                 letterSpacing: "0.08em",
                 textTransform: "uppercase",
-                color: "#7c5cff",
+                color: "#6f52f0",
               }}
             >
               Total

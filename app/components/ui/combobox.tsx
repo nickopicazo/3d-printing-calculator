@@ -35,6 +35,8 @@ type ComboboxProps = {
   allowCustom?: boolean;
   className?: string;
   id?: string;
+  /** Accessible name when a visible <Label htmlFor> is not enough for axe. */
+  "aria-label"?: string;
 };
 
 export function Combobox({
@@ -47,6 +49,7 @@ export function Combobox({
   allowCustom = true,
   className,
   id,
+  "aria-label": ariaLabel,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
@@ -75,6 +78,7 @@ export function Combobox({
           variant="outline"
           role="combobox"
           aria-expanded={open}
+          aria-label={ariaLabel ?? placeholder}
           className={cn(
             "w-full justify-between font-normal",
             !value && "text-[var(--color-ink-muted)]",
@@ -82,7 +86,7 @@ export function Combobox({
           )}
         >
           <span className="truncate">{display}</span>
-          <ChevronsUpDown className="opacity-50" />
+          <ChevronsUpDown className="opacity-50" aria-hidden />
         </Button>
       </PopoverTrigger>
       <PopoverContent
@@ -116,6 +120,7 @@ export function Combobox({
                       "mr-2 size-4",
                       value === option.value ? "opacity-100" : "opacity-0",
                     )}
+                    aria-hidden
                   />
                   {option.label}
                   {option.keywords ? (

@@ -27,7 +27,7 @@ export type AppSettings = {
 export function currencySymbolForCode(code: string): string {
   const currency = (code || "PHP").trim().toUpperCase().slice(0, 3) || "PHP";
   try {
-    const parts = new Intl.NumberFormat(undefined, {
+    const parts = new Intl.NumberFormat("en-US", {
       style: "currency",
       currency,
       currencyDisplay: "narrowSymbol",
@@ -76,7 +76,7 @@ export function listCurrencies(): CurrencyOption[] {
 
   const displayNames =
     typeof Intl !== "undefined" && "DisplayNames" in Intl
-      ? new Intl.DisplayNames(undefined, { type: "currency" })
+      ? new Intl.DisplayNames("en-US", { type: "currency" })
       : null;
 
   const priority = new Map(PRIORITY_CURRENCIES.map((c, i) => [c, i]));

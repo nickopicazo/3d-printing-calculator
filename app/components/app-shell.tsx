@@ -219,8 +219,9 @@ export function AppShell({
             </nav>
           </div>
           <p className="mt-6 text-xs text-[var(--color-ink-muted)]">
-            © {new Date().getFullYear()} 3D Printing Calculator. Estimate
-            accurately. Price confidently.
+            ©{" "}
+            <span suppressHydrationWarning>{new Date().getFullYear()}</span> 3D
+            Printing Calculator. Estimate accurately. Price confidently.
           </p>
         </div>
       </footer>

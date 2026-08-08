@@ -151,6 +151,10 @@ export function MaterialsEditor({
         const selectedValue = line.inventoryMaterialId
           ? inventoryOptionValue(line.inventoryMaterialId)
           : line.type || line.label;
+        const priceId = `price-${line.id}`;
+        const qtyId = `qty-${line.id}`;
+        const materialId = `material-${line.id}`;
+        const colorTextId = `color-text-${line.id}`;
 
         return (
           <div
@@ -159,8 +163,12 @@ export function MaterialsEditor({
           >
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
               <div className="min-w-0 flex-[1.4] space-y-1.5">
-                <Label className="text-xs">Material</Label>
+                <Label htmlFor={materialId} className="text-xs">
+                  Material
+                </Label>
                 <Combobox
+                  id={materialId}
+                  aria-label={`Material ${line.label || line.type || ""}`.trim()}
                   options={materialOptions}
                   value={selectedValue}
                   onChange={(v) => selectMaterial(line.id, v)}
@@ -178,7 +186,9 @@ export function MaterialsEditor({
               </div>
 
               <div className="w-full space-y-1.5 sm:w-[9.5rem]">
-                <Label className="text-xs">Color</Label>
+                <Label htmlFor={colorTextId} className="text-xs">
+                  Color
+                </Label>
                 <div className="flex h-10 items-center gap-2 rounded-xl border border-[var(--color-line)] bg-[#fafafa] px-2">
                   <label
                     className={cn(
@@ -188,9 +198,10 @@ export function MaterialsEditor({
                     )}
                     title="Pick Color"
                   >
+                    <span className="sr-only">Pick color</span>
                     <input
                       type="color"
-                      aria-label="Color"
+                      aria-label={`Color picker for ${line.label || "material"}`}
                       value={colorInputValue(line.color)}
                       onChange={(e) =>
                         update(line.id, {
@@ -204,10 +215,12 @@ export function MaterialsEditor({
                       <span
                         className="block size-full"
                         style={{ backgroundColor: hex }}
+                        aria-hidden
                       />
                     ) : null}
                   </label>
                   <input
+                    id={colorTextId}
                     value={line.color ?? ""}
                     onChange={(e) =>
                       update(line.id, {
@@ -216,14 +229,18 @@ export function MaterialsEditor({
                       })
                     }
                     placeholder="#FFFFFF"
+                    aria-label={`Color hex for ${line.label || "material"}`}
                     className="min-w-0 flex-1 bg-transparent font-mono text-xs uppercase outline-none placeholder:text-[var(--color-ink-muted)]/60"
                   />
                 </div>
               </div>
 
               <div className="w-full space-y-1.5 sm:w-28">
-                <Label className="text-xs">{priceLabel}</Label>
+                <Label htmlFor={priceId} className="text-xs">
+                  {priceLabel}
+                </Label>
                 <Input
+                  id={priceId}
                   type="number"
                   min={0}
                   value={line.pricePerUnit}
@@ -237,10 +254,11 @@ export function MaterialsEditor({
               </div>
 
               <div className="w-full space-y-1.5 sm:w-28">
-                <Label className="text-xs">
+                <Label htmlFor={qtyId} className="text-xs">
                   {technology === "sla" ? "Volume" : "Weight"} ({unitLabel})
                 </Label>
                 <Input
+                  id={qtyId}
                   type="number"
                   min={0}
                   step="0.1"

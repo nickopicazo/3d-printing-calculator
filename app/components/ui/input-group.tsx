@@ -17,7 +17,7 @@ function InputGroup({ className, ...props }: React.ComponentProps<"div">) {
         "has-[>[data-align=inline-end]]:[&>input]:pr-2",
         "has-[>[data-align=block-start]]:h-auto has-[>[data-align=block-start]]:flex-col has-[>[data-align=block-start]]:[&>input]:pb-3",
         "has-[>[data-align=block-end]]:h-auto has-[>[data-align=block-end]]:flex-col has-[>[data-align=block-end]]:[&>input]:pt-3",
-        "has-[[data-slot=input-group-control]:focus]:border-[var(--color-accent)] has-[[data-slot=input-group-control]:focus]:shadow-[0_0_0_3px_rgba(124,92,255,0.18)]",
+        "has-[[data-slot=input-group-control]:focus]:border-[var(--color-accent)] has-[[data-slot=input-group-control]:focus]:shadow-[0_0_0_3px_rgba(111,82,240,0.18)]",
         "has-[[data-slot][aria-invalid=true]]:border-[#e8c4be] has-[[data-slot][aria-invalid=true]]:shadow-[0_0_0_3px_rgba(163,59,43,0.15)]",
         className,
       )}

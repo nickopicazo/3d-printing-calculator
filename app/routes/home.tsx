@@ -49,7 +49,7 @@ import {
   type SavedCustomer,
   type SavedProject,
 } from "~/lib/calculator-types";
-import { withParentMeta, SITE_DESCRIPTION, SITE_TITLE } from "~/lib/seo";
+import { withParentMeta, SITE_DESCRIPTION, SITE_FAQS, SITE_TITLE } from "~/lib/seo";
 import { createId, calculateProject } from "~/lib/pricing";
 import { minutesToHoursMinutes } from "~/lib/pricing";
 import { getSession } from "~/lib/session.server";
@@ -840,6 +840,7 @@ export default function Home() {
                 <Label htmlFor="currency">Currency</Label>
                 <Combobox
                   id="currency"
+                  aria-label="Currency"
                   options={listCurrencies().map((c) => ({
                     value: c.code,
                     label: `${c.code} · ${c.symbol}`,
@@ -1032,7 +1033,7 @@ export default function Home() {
               {message || warning || error ? (
                 <div className="space-y-2">
                   {message ? (
-                    <p className="rounded-xl border border-[rgba(124,92,255,0.25)] bg-[rgba(124,92,255,0.08)] px-3 py-2 text-sm font-medium text-[var(--color-accent-deep)]">
+                    <p className="rounded-xl border border-[rgba(111,82,240,0.25)] bg-[rgba(111,82,240,0.08)] px-3 py-2 text-sm font-medium text-[var(--color-accent-deep)]">
                       {message}
                     </p>
                   ) : null}
@@ -1272,40 +1273,24 @@ export default function Home() {
             </article>
           ))}
         </div>
-        <div className="max-w-2xl space-y-4">
+        <div className="w-full space-y-4">
           <h2 className="font-display text-xl font-extrabold tracking-tight">
             Frequently asked questions
           </h2>
           <div className="space-y-3">
-            <details className="rounded-xl border border-[var(--color-line)] bg-white/70 px-4 py-3">
-              <summary className="cursor-pointer font-semibold">
-                How do I calculate 3D printing cost?
-              </summary>
-              <p className="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)]">
-                Enter material usage, print time, and your rates for machine
-                time, labor, electricity, and markup. The calculator totals
-                material, hardware, packaging, labor, machine, and electricity
-                with optional VAT.
-              </p>
-            </details>
-            <details className="rounded-xl border border-[var(--color-line)] bg-white/70 px-4 py-3">
-              <summary className="cursor-pointer font-semibold">
-                Does this work for FDM and SLA?
-              </summary>
-              <p className="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)]">
-                Yes. Each print can be FDM (filament) or SLA (resin), and you
-                can mix technologies in one project quote.
-              </p>
-            </details>
-            <details className="rounded-xl border border-[var(--color-line)] bg-white/70 px-4 py-3">
-              <summary className="cursor-pointer font-semibold">
-                Can I import Bambu or Orca files?
-              </summary>
-              <p className="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)]">
-                Upload 3MF or G-code exports to pull filament weight, resin
-                volume, and estimated print time from slicer metadata.
-              </p>
-            </details>
+            {SITE_FAQS.map((item) => (
+              <details
+                key={item.question}
+                className="rounded-xl border border-[var(--color-line)] bg-white/70 px-4 py-3"
+              >
+                <summary className="cursor-pointer font-semibold">
+                  {item.question}
+                </summary>
+                <p className="mt-2 text-sm leading-relaxed text-[var(--color-ink-muted)]">
+                  {item.answer}
+                </p>
+              </details>
+            ))}
           </div>
         </div>
       </section>

@@ -446,7 +446,7 @@ export default function MaterialsPage() {
                               className={cn(
                                 "rounded-full px-2.5 py-0.5 text-[11px] font-semibold",
                                 row.kind === "resin"
-                                  ? "bg-[rgba(124,92,255,0.12)] text-[var(--color-accent-deep)]"
+                                  ? "bg-[rgba(111,82,240,0.12)] text-[var(--color-accent-deep)]"
                                   : "bg-[var(--color-paper)] text-[var(--color-ink-muted)]",
                               )}
                             >

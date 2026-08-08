@@ -52,13 +52,14 @@ export function emptyPrint(
   settings: AppSettings,
   technology: Technology = "fdm",
   name = "Print 1",
+  ids?: { printId?: string; materialId?: string },
 ): PrintDraft {
   const price =
     technology === "sla"
       ? settings.defaultResinPricePerLitre
       : settings.defaultFilamentPricePerKg;
   return {
-    id: createId("print"),
+    id: ids?.printId ?? createId("print"),
     name,
     technology,
     printerName: "",
@@ -68,7 +69,9 @@ export function emptyPrint(
     laborMinutes: 0,
     hardwareCost: 0,
     packagingCost: 0,
-    materials: [createEmptyMaterial(technology, price)],
+    materials: [
+      createEmptyMaterial(technology, price, undefined, ids?.materialId),
+    ],
     plates: [],
     metadataSnapshot: null,
   };
@@ -94,7 +97,13 @@ export function emptyProject(settings: AppSettings): ProjectDraft {
     id: null,
     name: "",
     customer: emptyCustomer(),
-    prints: [emptyPrint(settings)],
+    // Stable IDs so SSR HTML matches the client's first paint (avoids React #418).
+    prints: [
+      emptyPrint(settings, "fdm", "Print 1", {
+        printId: "draft-print",
+        materialId: "draft-mat",
+      }),
+    ],
   };
 }
 

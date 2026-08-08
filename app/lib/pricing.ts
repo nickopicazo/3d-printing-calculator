@@ -255,7 +255,8 @@ export function formatMoney(
   const token = (currencyCodeOrSymbol || "").trim();
   if (/^[A-Za-z]{3}$/.test(token)) {
     try {
-      return new Intl.NumberFormat(undefined, {
+      // Fixed locale so SSR and client format identically (avoids React #418).
+      return new Intl.NumberFormat("en-US", {
         style: "currency",
         currency: token.toUpperCase(),
         minimumFractionDigits: fractionDigits,
@@ -283,10 +284,11 @@ export function createEmptyMaterial(
   technology: Technology,
   pricePerUnit: number,
   label?: string,
+  id?: string,
 ): MaterialLine {
   const isSla = technology === "sla";
   return {
-    id: createId("mat"),
+    id: id ?? createId("mat"),
     label: label ?? (isSla ? "Resin 1" : "Filament 1"),
     quantity: 0,
     unit: isSla ? "ml" : "g",

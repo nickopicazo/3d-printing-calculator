@@ -1,6 +1,7 @@
 import { and, desc, eq } from "drizzle-orm";
 import { Link, useLoaderData, useSearchParams } from "react-router";
 import type { Route } from "./+types/quotes._index";
+import { Button } from "~/components/ui/button";
 import {
   Card,
   CardContent,
@@ -16,7 +17,7 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { db } from "~/db/index.server";
-import { clients, projects, quotes } from "~/db/schema";
+import { customers, projects, quotes } from "~/db/schema";
 import { formatMoney } from "~/lib/pricing";
 import { requireUser } from "~/lib/session.server";
 import type { AppSettings } from "~/lib/settings";
@@ -28,30 +29,30 @@ export function meta({}: Route.MetaArgs) {
 export async function loader({ request }: Route.LoaderArgs) {
   const session = await requireUser(request);
   const url = new URL(request.url);
-  const clientId = url.searchParams.get("clientId");
+  const customerId = url.searchParams.get("customerId");
   const projectId = url.searchParams.get("projectId");
 
   const conditions = [eq(quotes.userId, session.user.id)];
-  if (clientId) conditions.push(eq(quotes.clientId, clientId));
+  if (customerId) conditions.push(eq(quotes.customerId, customerId));
   if (projectId) conditions.push(eq(quotes.projectId, projectId));
 
   const rows = await db
     .select({
       quote: quotes,
-      clientName: clients.name,
+      customerName: customers.name,
       projectName: projects.name,
     })
     .from(quotes)
-    .leftJoin(clients, eq(quotes.clientId, clients.id))
+    .leftJoin(customers, eq(quotes.customerId, customers.id))
     .leftJoin(projects, eq(quotes.projectId, projects.id))
     .where(and(...conditions))
     .orderBy(desc(quotes.createdAt));
 
-  const clientRows = await db
+  const customerRows = await db
     .select()
-    .from(clients)
-    .where(eq(clients.userId, session.user.id))
-    .orderBy(clients.name);
+    .from(customers)
+    .where(eq(customers.userId, session.user.id))
+    .orderBy(customers.name);
 
   const projectRows = await db
     .select()
@@ -61,9 +62,9 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   return {
     quotes: rows,
-    clients: clientRows,
+    customers: customerRows,
     projects: projectRows,
-    filters: { clientId, projectId },
+    filters: { customerId, projectId },
   };
 }
 
@@ -76,30 +77,30 @@ export default function QuotesIndexPage() {
       <header className="mb-8 animate-fade-up">
         <h1 className="font-display text-3xl font-extrabold">Saved quotes</h1>
         <p className="mt-2 text-[var(--color-ink-muted)]">
-          Filter by client or project. Each save is a snapshot.
+          Filter by customer or project. Each quote is an invoice snapshot.
         </p>
       </header>
 
       <div className="mb-6 grid gap-3 sm:grid-cols-2">
         <div>
-          <p className="field-label">Client</p>
+          <p className="field-label">Customer</p>
           <Select
-            value={data.filters.clientId ?? "all"}
+            value={data.filters.customerId ?? "all"}
             onValueChange={(value) => {
               setSearchParams((prev) => {
                 const next = new URLSearchParams(prev);
-                if (value === "all") next.delete("clientId");
-                else next.set("clientId", value);
+                if (value === "all") next.delete("customerId");
+                else next.set("customerId", value);
                 return next;
               });
             }}
           >
             <SelectTrigger>
-              <SelectValue placeholder="All clients" />
+              <SelectValue placeholder="All customers" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All clients</SelectItem>
-              {data.clients.map((c) => (
+              <SelectItem value="all">All customers</SelectItem>
+              {data.customers.map((c) => (
                 <SelectItem key={c.id} value={c.id}>
                   {c.name}
                 </SelectItem>
@@ -145,36 +146,47 @@ export default function QuotesIndexPage() {
             .
           </p>
         ) : (
-          data.quotes.map(({ quote, clientName, projectName }) => {
+          data.quotes.map(({ quote, customerName, projectName }) => {
             const settings = quote.settingsSnapshot as AppSettings;
             const symbol = settings?.currencySymbol ?? "₱";
             return (
-              <Link key={quote.id} to={`/quotes/${quote.id}`} className="block">
-                <Card className="transition-shadow hover:shadow-[0_16px_40px_rgba(26,35,50,0.1)]">
-                  <CardHeader className="pb-2">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <CardTitle className="text-lg">{quote.title}</CardTitle>
-                        <CardDescription>
-                          {[clientName, projectName].filter(Boolean).join(" · ") ||
-                            "No client"}
-                          {" · "}
-                          {new Date(quote.createdAt).toLocaleString()}
-                        </CardDescription>
-                      </div>
-                      <p className="font-display text-xl font-extrabold text-[var(--color-accent-deep)]">
-                        {formatMoney(quote.total, symbol)}
-                      </p>
+              <Card
+                key={quote.id}
+                className="transition-shadow hover:shadow-[0_16px_40px_rgba(26,35,50,0.1)]"
+              >
+                <CardHeader className="pb-2">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <CardTitle className="text-lg">
+                        <Link to={`/quotes/${quote.id}`}>{quote.title}</Link>
+                      </CardTitle>
+                      <CardDescription>
+                        {[customerName, projectName].filter(Boolean).join(" · ") ||
+                          "No customer"}
+                        {" · "}
+                        {new Date(quote.createdAt).toLocaleString()}
+                      </CardDescription>
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-[var(--color-ink-muted)]">
-                      {quote.printMinutes} min · material{" "}
-                      {formatMoney(quote.materialCost, symbol)}
+                    <p className="font-display text-xl font-extrabold text-[var(--color-accent-deep)]">
+                      {formatMoney(quote.total, symbol)}
                     </p>
-                  </CardContent>
-                </Card>
-              </Link>
+                  </div>
+                </CardHeader>
+                <CardContent className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-sm text-[var(--color-ink-muted)]">
+                    {quote.printMinutes} min · material{" "}
+                    {formatMoney(quote.materialCost, symbol)}
+                  </p>
+                  <div className="flex gap-2">
+                    <Button asChild size="sm" variant="secondary">
+                      <Link to={`/quotes/${quote.id}`}>View</Link>
+                    </Button>
+                    <Button asChild size="sm">
+                      <Link to={`/quotes/${quote.id}/invoice`}>Download PDF</Link>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             );
           })
         )}

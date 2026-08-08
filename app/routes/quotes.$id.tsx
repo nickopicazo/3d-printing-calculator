@@ -1,6 +1,7 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { Link, useLoaderData } from "react-router";
 import type { Route } from "./+types/quotes.$id";
+import { CostBreakdown } from "~/components/calculator/cost-breakdown";
 import { Button } from "~/components/ui/button";
 import {
   Card,
@@ -9,15 +10,9 @@ import {
   CardHeader,
   CardTitle,
 } from "~/components/ui/card";
-import { Separator } from "~/components/ui/separator";
 import { db } from "~/db/index.server";
-import {
-  clients,
-  projects,
-  quoteFilamentLines,
-  quotePlates,
-  quotes,
-} from "~/db/schema";
+import { customers, projects, quotes } from "~/db/schema";
+import type { QuotePrintSnapshot } from "~/lib/calculator-types";
 import { formatMoney } from "~/lib/pricing";
 import { requireUser } from "~/lib/session.server";
 import type { AppSettings } from "~/lib/settings";
@@ -34,39 +29,34 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   const [row] = await db
     .select({
       quote: quotes,
-      clientName: clients.name,
-      clientEmail: clients.email,
-      clientPhone: clients.phone,
+      customerName: customers.name,
+      customerEmail: customers.email,
+      customerPhone: customers.phone,
+      customerAddress: customers.address,
       projectName: projects.name,
     })
     .from(quotes)
-    .leftJoin(clients, eq(quotes.clientId, clients.id))
+    .leftJoin(customers, eq(quotes.customerId, customers.id))
     .leftJoin(projects, eq(quotes.projectId, projects.id))
     .where(and(eq(quotes.id, id), eq(quotes.userId, session.user.id)))
     .limit(1);
 
   if (!row) throw new Response("Not found", { status: 404 });
 
-  const plates = await db
-    .select()
-    .from(quotePlates)
-    .where(eq(quotePlates.quoteId, id))
-    .orderBy(asc(quotePlates.plateIndex));
-
-  const lines = await db
-    .select()
-    .from(quoteFilamentLines)
-    .where(eq(quoteFilamentLines.quoteId, id))
-    .orderBy(asc(quoteFilamentLines.sortOrder));
+  const snap = row.quote.customerSnapshot as {
+    name?: string;
+    email?: string | null;
+    phone?: string | null;
+    address?: string | null;
+  };
 
   return {
     quote: row.quote,
-    clientName: row.clientName,
-    clientEmail: row.clientEmail,
-    clientPhone: row.clientPhone,
+    customerName: snap.name ?? row.customerName,
+    customerEmail: snap.email ?? row.customerEmail,
+    customerPhone: snap.phone ?? row.customerPhone,
+    customerAddress: snap.address ?? row.customerAddress,
     projectName: row.projectName,
-    plates,
-    lines,
   };
 }
 
@@ -74,13 +64,22 @@ export default function QuoteDetailPage() {
   const data = useLoaderData<typeof loader>();
   const settings = data.quote.settingsSnapshot as AppSettings;
   const symbol = settings?.currencySymbol ?? "₱";
+  const prints = (data.quote.printsSnapshot ?? []) as QuotePrintSnapshot[];
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
-      <div className="mb-6">
+      <div className="mb-6 flex flex-wrap gap-2">
         <Button asChild variant="ghost" size="sm">
           <Link to="/quotes">← All quotes</Link>
         </Button>
+        <Button asChild size="sm">
+          <Link to={`/quotes/${data.quote.id}/invoice`}>Print / Download PDF</Link>
+        </Button>
+        {data.quote.projectId ? (
+          <Button asChild variant="secondary" size="sm">
+            <Link to={`/?projectId=${data.quote.projectId}`}>Open project</Link>
+          </Button>
+        ) : null}
       </div>
 
       <header className="mb-8 animate-fade-up">
@@ -91,115 +90,73 @@ export default function QuoteDetailPage() {
           {data.quote.title}
         </h1>
         <p className="mt-2 text-[var(--color-ink-muted)]">
-          {[data.clientName, data.projectName].filter(Boolean).join(" · ") ||
-            "No client"}
+          {[data.customerName, data.projectName].filter(Boolean).join(" · ") ||
+            "No customer"}
           {" · "}
           {new Date(data.quote.createdAt).toLocaleString()}
         </p>
-        {(data.clientEmail || data.clientPhone) && (
+        {(data.customerEmail || data.customerPhone || data.customerAddress) && (
           <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
-            {[data.clientEmail, data.clientPhone].filter(Boolean).join(" · ")}
+            {[data.customerEmail, data.customerPhone, data.customerAddress]
+              .filter(Boolean)
+              .join(" · ")}
           </p>
         )}
       </header>
 
-      {data.plates.length > 0 ? (
-        <section className="mb-6">
-          <h2 className="font-display mb-3 text-xl font-bold">Plates</h2>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {data.plates.map((plate) => (
-              <Card key={plate.id}>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base">Plate {plate.plateIndex}</CardTitle>
-                  <CardDescription>
-                    {plate.sliced
-                      ? `${plate.printMinutes ?? 0} min`
-                      : "Unsliced thumbnail"}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {plate.imagePath ? (
-                    <img
-                      src={`/uploads/${plate.imagePath}`}
-                      alt={`Plate ${plate.plateIndex}`}
-                      className="w-full rounded-xl border border-[var(--color-line)] bg-black"
-                    />
-                  ) : (
-                    <div className="flex aspect-square items-center justify-center rounded-xl border border-dashed border-[var(--color-line)] text-sm text-[var(--color-ink-muted)]">
-                      No image
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </section>
-      ) : null}
+      <section className="mb-6 space-y-3">
+        <h2 className="font-display text-xl font-bold">Prints</h2>
+        {prints.map((p) => (
+          <Card key={p.id}>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">{p.name}</CardTitle>
+              <CardDescription>
+                {p.technology.toUpperCase()}
+                {p.printerName ? ` · ${p.printerName}` : ""}
+                {" · "}
+                {Math.floor(p.printMinutes / 60)}h {p.printMinutes % 60}m
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              {p.materials.map((m, i) => (
+                <div key={i} className="flex justify-between gap-2">
+                  <span>
+                    {m.label} · {m.quantity}
+                    {m.unit} @ {formatMoney(m.pricePerUnit, symbol)}/
+                    {m.unit === "ml" ? "L" : "kg"}
+                  </span>
+                  <span className="font-mono">
+                    {formatMoney((m.quantity / 1000) * m.pricePerUnit, symbol)}
+                  </span>
+                </div>
+              ))}
+              <p className="pt-1 font-semibold text-[var(--color-accent-deep)]">
+                Line total {formatMoney(p.breakdown.total, symbol)}
+              </p>
+            </CardContent>
+          </Card>
+        ))}
+      </section>
 
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle>Filaments</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {data.lines.map((line) => (
-            <div
-              key={line.id}
-              className="flex items-center justify-between gap-3 text-sm"
-            >
-              <div className="flex items-center gap-2">
-                {line.color ? (
-                  <span
-                    className="h-4 w-4 rounded border border-[var(--color-line)]"
-                    style={{ background: line.color }}
-                  />
-                ) : null}
-                <span>
-                  {line.label} · {line.grams}g @ {formatMoney(line.pricePerKg, symbol)}
-                  /kg
-                </span>
-              </div>
-              <span className="font-mono">
-                {formatMoney((line.grams / 1000) * line.pricePerKg, symbol)}
-              </span>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-
-      <Card className="border-[var(--color-accent)]/25 bg-[linear-gradient(160deg,#ffffff_0%,#eef8f6_100%)]">
-        <CardHeader>
-          <CardTitle>Totals</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <dl className="space-y-2 text-sm sm:text-base">
-            <div className="flex justify-between gap-4">
-              <dt className="text-[var(--color-ink-muted)]">Material</dt>
-              <dd className="font-mono">{formatMoney(data.quote.materialCost, symbol)}</dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-[var(--color-ink-muted)]">Machine</dt>
-              <dd className="font-mono">{formatMoney(data.quote.machineCost, symbol)}</dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-[var(--color-ink-muted)]">Markup</dt>
-              <dd className="font-mono">{formatMoney(data.quote.markupAmount, symbol)}</dd>
-            </div>
-            <Separator className="my-2" />
-            <div className="flex justify-between gap-4">
-              <dt className="font-display text-lg font-bold">Total</dt>
-              <dd className="font-display text-2xl font-extrabold text-[var(--color-accent-deep)]">
-                {formatMoney(data.quote.total, symbol)}
-              </dd>
-            </div>
-          </dl>
-        </CardContent>
-      </Card>
-
-      {data.quote.sourceName ? (
-        <p className="mt-6 text-center text-xs text-[var(--color-ink-muted)]">
-          Source: <span className="font-mono">{data.quote.sourceName}</span>
-        </p>
-      ) : null}
+      <CostBreakdown
+        breakdown={{
+          materialCost: data.quote.materialCost,
+          electricityCost: data.quote.electricityCost,
+          laborCost: data.quote.laborCost,
+          machineCost: data.quote.machineCost,
+          hardwareCost: data.quote.hardwareCost,
+          packagingCost: data.quote.packagingCost,
+          consumablesCost: data.quote.consumablesCost,
+          landed: data.quote.landed,
+          failureUplift: data.quote.failureUplift,
+          markupAmount: data.quote.markupAmount,
+          preVat: data.quote.preVat,
+          vatAmount: data.quote.vatAmount,
+          total: data.quote.total,
+          printHours: data.quote.printMinutes / 60,
+        }}
+        currencySymbol={symbol}
+      />
     </main>
   );
 }

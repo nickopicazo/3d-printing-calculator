@@ -6,8 +6,8 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "~/components/ui/collapsible";
+import { LabelWithHelp } from "~/components/ui/field-help";
 import { Input } from "~/components/ui/input";
-import { Label } from "~/components/ui/label";
 import {
   suggestedMachineRate,
   type AppSettings,
@@ -51,12 +51,30 @@ export function AdvancedSettingsPanel({ settings, onChange, showSla }: Props) {
       </CollapsibleTrigger>
       <CollapsibleContent className="space-y-4 border-t border-[var(--color-line)] px-5 py-4">
         <p className="text-sm text-[var(--color-ink-muted)]">
-          Optional. Leave blank (0) to exclude from the estimate — electricity,
+          Optional. Leave at 0 to exclude from the estimate — electricity,
           labor rate, failure uplift, and depreciation helpers.
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label htmlFor="power-w">Power (W)</Label>
+            <LabelWithHelp
+              htmlFor="power-w"
+              tip="Used with Electricity / kWh and print time."
+              title="Power (W)"
+              details={
+                <>
+                  <p>
+                    Electricity cost = (Power ÷ 1000) × print hours ×
+                    Electricity / kWh.
+                  </p>
+                  <p>
+                    Both Power and Electricity / kWh must be set above 0, and
+                    the print must have print time, or electricity stays at 0.
+                  </p>
+                </>
+              }
+            >
+              Power (W)
+            </LabelWithHelp>
             <Input
               id="power-w"
               type="number"
@@ -66,7 +84,24 @@ export function AdvancedSettingsPanel({ settings, onChange, showSla }: Props) {
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="kwh">Electricity / kWh</Label>
+            <LabelWithHelp
+              htmlFor="kwh"
+              tip="Used with Power (W) and print time."
+              title="Electricity / kWh"
+              details={
+                <>
+                  <p>
+                    Electricity cost = (Power ÷ 1000) × print hours ×
+                    Electricity / kWh.
+                  </p>
+                  <p>
+                    Leave at 0 to exclude electricity from the estimate.
+                  </p>
+                </>
+              }
+            >
+              Electricity / kWh
+            </LabelWithHelp>
             <Input
               id="kwh"
               type="number"
@@ -79,7 +114,25 @@ export function AdvancedSettingsPanel({ settings, onChange, showSla }: Props) {
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="labor-rate">Labor Rate / Hour</Label>
+            <LabelWithHelp
+              htmlFor="labor-rate"
+              tip="Required for Labor Time on each print to affect cost."
+              title="Labor Rate / Hour"
+              details={
+                <>
+                  <p>
+                    Applied to Labor Time (Min) on each print: (minutes ÷ 60) ×
+                    this rate.
+                  </p>
+                  <p>
+                    If this is 0, entering labor minutes will not change the
+                    total.
+                  </p>
+                </>
+              }
+            >
+              Labor Rate / Hour
+            </LabelWithHelp>
             <Input
               id="labor-rate"
               type="number"
@@ -91,7 +144,19 @@ export function AdvancedSettingsPanel({ settings, onChange, showSla }: Props) {
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="failure">Failure %</Label>
+            <LabelWithHelp
+              htmlFor="failure"
+              tip="Adds a % buffer on top of landed print cost."
+              title="Failure %"
+              details={
+                <p>
+                  Failure uplift = landed cost × (Failure % ÷ 100). Use this to
+                  cover reprints and scrap. Leave at 0 to skip.
+                </p>
+              }
+            >
+              Failure %
+            </LabelWithHelp>
             <Input
               id="failure"
               type="number"
@@ -103,7 +168,20 @@ export function AdvancedSettingsPanel({ settings, onChange, showSla }: Props) {
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="purchase">Printer Purchase Price</Label>
+            <LabelWithHelp
+              htmlFor="purchase"
+              tip="Only used to suggest Machine Rate / Hr — not billed directly."
+              title="Printer Purchase Price"
+              details={
+                <p>
+                  Together with Lifespan (Hours), this suggests a machine rate
+                  (purchase ÷ lifespan). Click Apply to copy it into Machine
+                  Rate / Hr. It does not add cost by itself.
+                </p>
+              }
+            >
+              Printer Purchase Price
+            </LabelWithHelp>
             <Input
               id="purchase"
               type="number"
@@ -115,14 +193,27 @@ export function AdvancedSettingsPanel({ settings, onChange, showSla }: Props) {
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="lifespan">Lifespan (Hours)</Label>
+            <LabelWithHelp
+              htmlFor="lifespan"
+              tip="Only used to suggest Machine Rate / Hr — not billed directly."
+              title="Lifespan (Hours)"
+              details={
+                <p>
+                  Expected useful life of the printer. Suggested machine rate =
+                  Purchase Price ÷ Lifespan Hours. Apply that suggestion to bill
+                  machine time.
+                </p>
+              }
+            >
+              Lifespan (Hours)
+            </LabelWithHelp>
             <Input
               id="lifespan"
               type="number"
-              min={1}
+              min={0}
               value={settings.printerLifespanHours}
               onChange={(e) =>
-                set("printerLifespanHours", Number(e.target.value) || 1)
+                set("printerLifespanHours", Number(e.target.value) || 0)
               }
             />
           </div>
@@ -146,7 +237,20 @@ export function AdvancedSettingsPanel({ settings, onChange, showSla }: Props) {
         {showSla ? (
           <div className="grid gap-3 border-t border-[var(--color-line)] pt-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="sla-consumables">SLA Consumables / Print</Label>
+              <LabelWithHelp
+                htmlFor="sla-consumables"
+                tip="Flat cost added once per SLA print."
+                title="SLA Consumables / Print"
+                details={
+                  <p>
+                    Covers IPA, FEP film wear, gloves, and similar. Added once
+                    per SLA print when that technology is selected. Leave at 0
+                    to exclude.
+                  </p>
+                }
+              >
+                SLA Consumables / Print
+              </LabelWithHelp>
               <Input
                 id="sla-consumables"
                 type="number"
@@ -158,7 +262,20 @@ export function AdvancedSettingsPanel({ settings, onChange, showSla }: Props) {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="sla-waste">SLA Support / Waste %</Label>
+              <LabelWithHelp
+                htmlFor="sla-waste"
+                tip="Increases resin quantity for supports / waste."
+                title="SLA Support / Waste %"
+                details={
+                  <p>
+                    Resin quantity is multiplied by (1 + waste %). Example: 100
+                    ml with 10% waste bills 110 ml. Only applies to SLA
+                    materials.
+                  </p>
+                }
+              >
+                SLA Support / Waste %
+              </LabelWithHelp>
               <Input
                 id="sla-waste"
                 type="number"

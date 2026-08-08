@@ -127,30 +127,24 @@ export function MaterialsEditor({
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <Label>Materials</Label>
-          {inv.length === 0 ? (
-            <p className="mt-0.5 text-xs text-[var(--color-ink-muted)]">
-              No saved {kind}. Pick a type or{" "}
-              <a
-                href="/materials"
-                className="font-semibold text-[var(--color-accent-deep)] hover:underline"
-              >
-                add inventory
-              </a>
-              .
-            </p>
-          ) : (
-            <p className="mt-0.5 text-xs text-[var(--color-ink-muted)]">
-              Search your inventory or type a custom material.
-            </p>
-          )}
-        </div>
-        <Button type="button" size="sm" variant="secondary" onClick={add}>
-          <Plus />
-          Add Material
-        </Button>
+      <div>
+        <Label>Materials</Label>
+        {inv.length === 0 ? (
+          <p className="mt-0.5 text-xs text-[var(--color-ink-muted)]">
+            No saved {kind}. Pick a type or{" "}
+            <a
+              href="/materials"
+              className="font-semibold text-[var(--color-accent-deep)] hover:underline"
+            >
+              add inventory
+            </a>
+            .
+          </p>
+        ) : (
+          <p className="mt-0.5 text-xs text-[var(--color-ink-muted)]">
+            Search your inventory or type a custom material.
+          </p>
+        )}
       </div>
       {materials.map((line) => {
         const hex = normalizeHex(line.color);
@@ -272,6 +266,10 @@ export function MaterialsEditor({
           </div>
         );
       })}
+      <Button type="button" size="sm" variant="secondary" onClick={add}>
+        <Plus />
+        Add Material
+      </Button>
     </div>
   );
 }

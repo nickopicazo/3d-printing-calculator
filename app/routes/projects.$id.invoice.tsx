@@ -2,6 +2,7 @@ import { and, asc, eq, inArray } from "drizzle-orm";
 import { useEffect } from "react";
 import { Link, useLoaderData } from "react-router";
 import type { Route } from "./+types/projects.$id.invoice";
+import { QuoteDocument } from "~/components/calculator/quote-document";
 import { Button } from "~/components/ui/button";
 import { db } from "~/db/index.server";
 import {
@@ -11,12 +12,11 @@ import {
   prints,
   projects,
 } from "~/db/schema";
-import { formatMoney } from "~/lib/pricing";
 import { requireUser } from "~/lib/session.server";
 import { DEFAULT_SETTINGS } from "~/lib/settings";
 
 export function meta({}: Route.MetaArgs) {
-  return [{ title: "Invoice · 3D Printing Calculator" }];
+  return [{ title: "Quote · 3D Printing Calculator" }];
 }
 
 export async function loader({ request, params }: Route.LoaderArgs) {
@@ -76,14 +76,10 @@ export async function loader({ request, params }: Route.LoaderArgs) {
         label: m.label,
         unit: m.unit,
         quantity: m.quantity,
-        pricePerUnit: m.pricePerUnit,
       })),
-    plates: plateRows
+    previewUrls: plateRows
       .filter((pl) => pl.printId === p.id && pl.sliced && pl.imagePath)
-      .map((pl) => ({
-        plateIndex: pl.plateIndex,
-        imageUrl: `/uploads/${pl.imagePath}`,
-      })),
+      .map((pl) => `/uploads/${pl.imagePath}`),
   }));
 
   const totals = printRows.reduce(
@@ -94,6 +90,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
       machineCost: acc.machineCost + p.machineCost,
       hardwareCost: acc.hardwareCost + p.hardwareCost,
       packagingCost: acc.packagingCost + p.packagingCost,
+      consumablesCost: acc.consumablesCost + p.consumablesCost,
       failureUplift: acc.failureUplift + p.failureUplift,
       markupAmount: acc.markupAmount + p.markupAmount,
       vatAmount: acc.vatAmount + p.vatAmount,
@@ -106,6 +103,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
       machineCost: 0,
       hardwareCost: 0,
       packagingCost: 0,
+      consumablesCost: 0,
       failureUplift: 0,
       markupAmount: 0,
       vatAmount: 0,
@@ -121,22 +119,30 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     customerEmail: row.customerEmail,
     customerPhone: row.customerPhone,
     customerAddress: row.customerAddress,
+    currencyCode: DEFAULT_SETTINGS.currencyCode,
   };
 }
 
 export default function ProjectInvoicePage() {
   const data = useLoaderData<typeof loader>();
-  const symbol = DEFAULT_SETTINGS.currencyCode;
-  const m = (n: number) => formatMoney(n, symbol);
 
   useEffect(() => {
-    const t = window.setTimeout(() => window.print(), 300);
+    const t = window.setTimeout(() => window.print(), 400);
     return () => window.clearTimeout(t);
   }, []);
 
   return (
-    <main className="mx-auto max-w-3xl bg-white px-6 py-10 text-black print:max-w-none print:px-0 print:py-0">
-      <div className="mb-6 flex gap-2 print:hidden">
+    <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
+      <style>{`
+        @media print {
+          @page { margin: 14mm 14mm 16mm; }
+          body { background: #fff !important; }
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+      `}</style>
+
+      <div className="mb-6 flex flex-wrap gap-2 print:hidden">
         <Button asChild variant="secondary" size="sm">
           <Link to={`/?projectId=${data.project.id}`}>Back</Link>
         </Button>
@@ -145,102 +151,25 @@ export default function ProjectInvoicePage() {
         </Button>
       </div>
 
-      <header className="mb-8 border-b border-neutral-300 pb-4">
-        <h1 className="text-3xl font-bold">{data.project.name}</h1>
-        <p className="mt-1 text-sm text-neutral-600">
-          {new Date(data.project.updatedAt).toLocaleString()}
-        </p>
-      </header>
-
-      {data.customerName ? (
-        <section className="mb-6">
-          <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-neutral-500">
-            Bill To
-          </h2>
-          <p className="font-semibold">{data.customerName}</p>
-          {data.customerEmail ? <p>{data.customerEmail}</p> : null}
-          {data.customerPhone ? <p>{data.customerPhone}</p> : null}
-          {data.customerAddress ? (
-            <p className="whitespace-pre-line">{data.customerAddress}</p>
-          ) : null}
-        </section>
-      ) : null}
-
-      <section className="mb-6 space-y-4">
-        {data.prints.map((p) => (
-          <div key={p.id} className="border-b border-neutral-200 pb-4">
-            {p.plates.length > 0 ? (
-              <div className="mb-3 flex flex-wrap gap-2">
-                {p.plates.map((pl) => (
-                  <img
-                    key={pl.plateIndex}
-                    src={pl.imageUrl}
-                    alt={`${p.name} plate ${pl.plateIndex}`}
-                    className="h-24 w-24 rounded border border-neutral-200 object-cover"
-                  />
-                ))}
-              </div>
-            ) : null}
-            <div className="flex justify-between gap-4 text-sm">
-              <div>
-                <p className="font-semibold">{p.name}</p>
-                <p className="text-neutral-600">
-                  {p.technology.toUpperCase()}
-                  {p.printerName ? ` · ${p.printerName}` : ""} ·{" "}
-                  {Math.floor(p.printMinutes / 60)}h {p.printMinutes % 60}m
-                </p>
-              </div>
-              <p className="font-semibold">{m(p.total)}</p>
-            </div>
-          </div>
-        ))}
-      </section>
-
-      <div className="ml-auto max-w-xs space-y-1 text-sm">
-        <div className="flex justify-between">
-          <span>Material</span>
-          <span>{m(data.totals.materialCost)}</span>
-        </div>
-        <div className="flex justify-between">
-          <span>Hardware</span>
-          <span>{m(data.totals.hardwareCost)}</span>
-        </div>
-        <div className="flex justify-between">
-          <span>Packaging</span>
-          <span>{m(data.totals.packagingCost)}</span>
-        </div>
-        <div className="flex justify-between">
-          <span>Labor</span>
-          <span>{m(data.totals.laborCost)}</span>
-        </div>
-        <div className="flex justify-between">
-          <span>Machine</span>
-          <span>{m(data.totals.machineCost)}</span>
-        </div>
-        <div className="flex justify-between">
-          <span>Electricity</span>
-          <span>{m(data.totals.electricityCost)}</span>
-        </div>
-        {data.totals.failureUplift > 0 ? (
-          <div className="flex justify-between">
-            <span>Failure Uplift</span>
-            <span>{m(data.totals.failureUplift)}</span>
-          </div>
-        ) : null}
-        <div className="flex justify-between">
-          <span>Markup</span>
-          <span>{m(data.totals.markupAmount)}</span>
-        </div>
-        {data.totals.vatAmount > 0 ? (
-          <div className="flex justify-between">
-            <span>VAT</span>
-            <span>{m(data.totals.vatAmount)}</span>
-          </div>
-        ) : null}
-        <div className="flex justify-between border-t border-neutral-300 pt-2 text-lg font-bold">
-          <span>Total</span>
-          <span>{m(data.totals.total)}</span>
-        </div>
+      <div className="rounded-[1.5rem] border border-[var(--color-line)] bg-white p-6 shadow-[0_8px_28px_rgba(22,22,26,0.04)] sm:p-8 print:rounded-none print:border-0 print:p-0 print:shadow-none">
+        <QuoteDocument
+          projectName={data.project.name}
+          issuedAt={data.project.updatedAt}
+          documentLabel="Quote"
+          customer={
+            data.customerName
+              ? {
+                  name: data.customerName,
+                  email: data.customerEmail,
+                  phone: data.customerPhone,
+                  address: data.customerAddress,
+                }
+              : null
+          }
+          prints={data.prints}
+          totals={data.totals}
+          currencyCode={data.currencyCode}
+        />
       </div>
     </main>
   );

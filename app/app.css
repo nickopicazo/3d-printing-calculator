@@ -18,6 +18,21 @@
   --color-warn: #9a6700;
 }
 
+/* Tailwind v4 preflight sets button cursor to default; restore pointer for UI. */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [role="tab"]:not([aria-disabled="true"]),
+  [role="menuitem"],
+  [role="option"],
+  a[href],
+  label[for],
+  select:not(:disabled),
+  summary {
+    cursor: pointer;
+  }
+}
+
 html,
 body {
   min-height: 100%;
@@ -27,8 +42,7 @@ body {
   background-attachment: fixed;
 }
 
-#root,
-body > div {
+#root {
   position: relative;
   z-index: 1;
 }

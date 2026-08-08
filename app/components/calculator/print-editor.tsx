@@ -61,22 +61,20 @@ export function PrintEditor({
 
   return (
     <div className={embedded ? "space-y-4" : "dash-card space-y-4"}>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <Tabs
-          value={print.technology}
-          onValueChange={(v) => setTech(v as Technology)}
-        >
-          <TabsList>
-            <TabsTrigger value="fdm">Filament · FDM</TabsTrigger>
-            <TabsTrigger value="sla">Resin · SLA</TabsTrigger>
-          </TabsList>
-        </Tabs>
-        {canRemove && onRemove ? (
-          <Button type="button" variant="destructive" size="sm" onClick={onRemove}>
-            Remove Print
-          </Button>
-        ) : null}
-      </div>
+      <Tabs
+        value={print.technology}
+        onValueChange={(v) => setTech(v as Technology)}
+        className="w-full"
+      >
+        <TabsList className="grid h-auto w-full grid-cols-2 gap-1 rounded-xl p-1">
+          <TabsTrigger value="fdm" className="w-full rounded-lg px-3 py-2">
+            Filament · FDM
+          </TabsTrigger>
+          <TabsTrigger value="sla" className="w-full rounded-lg px-3 py-2">
+            Resin · SLA
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1.5">
@@ -102,30 +100,37 @@ export function PrintEditor({
             </p>
           ) : null}
         </div>
-        {loggedIn && onUploadFiles && print.technology === "fdm" ? (
-          <label className="inline-flex self-end">
-            <input
-              type="file"
-              accept=".gcode,.3mf,.zip,.gcode.3mf,image/*"
-              multiple
-              className="sr-only"
-              disabled={uploading}
-              onChange={(e) => {
-                const list = e.target.files;
-                if (list && list.length > 0) {
-                  onUploadFiles(Array.from(list));
-                }
-                e.target.value = "";
-              }}
-            />
-            <Button type="button" asChild>
-              <span className="inline-flex cursor-pointer items-center gap-2">
-                <Upload className="size-4" />
-                {uploading ? "Importing…" : "Upload 3MF / G-code"}
-              </span>
+        <div className="flex flex-wrap items-center gap-2 self-end">
+          {loggedIn && onUploadFiles && print.technology === "fdm" ? (
+            <label className="inline-flex">
+              <input
+                type="file"
+                accept=".gcode,.3mf,.zip,.gcode.3mf,image/*"
+                multiple
+                className="sr-only"
+                disabled={uploading}
+                onChange={(e) => {
+                  const list = e.target.files;
+                  if (list && list.length > 0) {
+                    onUploadFiles(Array.from(list));
+                  }
+                  e.target.value = "";
+                }}
+              />
+              <Button type="button" asChild>
+                <span className="inline-flex cursor-pointer items-center gap-2">
+                  <Upload className="size-4" />
+                  {uploading ? "Importing…" : "Upload 3MF / G-code"}
+                </span>
+              </Button>
+            </label>
+          ) : null}
+          {canRemove && onRemove ? (
+            <Button type="button" variant="destructive" onClick={onRemove}>
+              Remove Print
             </Button>
-          </label>
-        ) : null}
+          ) : null}
+        </div>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-2">

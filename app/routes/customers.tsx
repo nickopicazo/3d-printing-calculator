@@ -1,5 +1,14 @@
 import { and, desc, eq } from "drizzle-orm";
-import { Form, Link, redirect, useActionData, useLoaderData } from "react-router";
+import { Plus } from "lucide-react";
+import { useEffect, useState } from "react";
+import {
+  Form,
+  Link,
+  redirect,
+  useActionData,
+  useLoaderData,
+  useNavigation,
+} from "react-router";
 import type { Route } from "./+types/customers";
 import { Button } from "~/components/ui/button";
 import {
@@ -9,6 +18,14 @@ import {
   CardHeader,
   CardTitle,
 } from "~/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Textarea } from "~/components/ui/textarea";
@@ -52,7 +69,7 @@ export async function action({ request }: Route.ActionArgs) {
     const email = String(form.get("email") ?? "").trim() || null;
     const phone = String(form.get("phone") ?? "").trim() || null;
     const address = String(form.get("address") ?? "").trim() || null;
-    if (!name) return { error: "Customer name is required." };
+    if (!name) return { createError: "Customer name is required." };
     await db.insert(customers).values({
       id: newId(),
       userId: session.user.id,
@@ -103,122 +120,171 @@ export async function action({ request }: Route.ActionArgs) {
 export default function CustomersPage() {
   const { customers: rows } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
+  const navigation = useNavigation();
+  const busy = navigation.state !== "idle";
+  const [addOpen, setAddOpen] = useState(false);
+  const createError =
+    actionData && "createError" in actionData && actionData.createError
+      ? actionData.createError
+      : null;
+
+  useEffect(() => {
+    if (createError) setAddOpen(true);
+  }, [createError]);
 
   return (
     <main className="page-shell">
       <div className="mx-auto max-w-5xl">
-      <header className="mb-8 animate-fade-up">
-        <h1 className="font-display text-3xl font-extrabold">Customers</h1>
-        <p className="mt-2 text-[var(--color-ink-muted)]">
-          Save contact details and attach projects for invoicing.
-        </p>
-      </header>
+        <Dialog open={addOpen} onOpenChange={setAddOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Add Customer</DialogTitle>
+              <DialogDescription>
+                Name, contact, and address for invoicing.
+              </DialogDescription>
+            </DialogHeader>
+            <Form method="post" className="grid gap-4 sm:grid-cols-2">
+              <input type="hidden" name="intent" value="create-customer" />
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="name">Name</Label>
+                <Input id="name" name="name" required />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="email">Email</Label>
+                <Input id="email" name="email" type="email" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="phone">Phone</Label>
+                <Input id="phone" name="phone" />
+              </div>
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="address">Address</Label>
+                <Textarea id="address" name="address" rows={2} />
+              </div>
+              {createError ? (
+                <p className="text-sm text-[#a33b2b] sm:col-span-2">
+                  {createError}
+                </p>
+              ) : null}
+              <DialogFooter className="sm:col-span-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setAddOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={busy}>
+                  <Plus />
+                  Save Customer
+                </Button>
+              </DialogFooter>
+            </Form>
+          </DialogContent>
+        </Dialog>
 
-      <Card className="mb-8 animate-fade-up-delay">
-        <CardHeader>
-          <CardTitle>Add Customer</CardTitle>
-          <CardDescription>Name, contact, and address.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Form method="post" className="grid gap-4 sm:grid-cols-2">
-            <input type="hidden" name="intent" value="create-customer" />
-            <div className="sm:col-span-2">
-              <Label htmlFor="name">Name</Label>
-              <Input id="name" name="name" required />
-            </div>
-            <div>
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" name="email" type="email" />
-            </div>
-            <div>
-              <Label htmlFor="phone">Phone</Label>
-              <Input id="phone" name="phone" />
-            </div>
-            <div className="sm:col-span-2">
-              <Label htmlFor="address">Address</Label>
-              <Textarea id="address" name="address" rows={2} />
-            </div>
-            {actionData && "error" in actionData && actionData.error ? (
-              <p className="text-sm text-[#a33b2b] sm:col-span-2">{actionData.error}</p>
-            ) : null}
-            <div className="sm:col-span-2">
-              <Button type="submit">Save Customer</Button>
-            </div>
-          </Form>
-        </CardContent>
-      </Card>
+        <header className="mb-8 flex flex-wrap items-start justify-between gap-4 animate-fade-up">
+          <div>
+            <h1 className="font-display text-3xl font-extrabold">Customers</h1>
+            <p className="mt-2 text-[var(--color-ink-muted)]">
+              Save contact details and attach projects for invoicing.
+            </p>
+          </div>
+          <Button type="button" onClick={() => setAddOpen(true)}>
+            <Plus />
+            Add Customer
+          </Button>
+        </header>
 
-      <div className="space-y-4">
-        {rows.length === 0 ? (
-          <p className="text-sm text-[var(--color-ink-muted)]">No customers yet.</p>
-        ) : (
-          rows.map((customer) => (
-            <Card key={customer.id}>
-              <CardHeader>
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <CardTitle>{customer.name}</CardTitle>
-                    <CardDescription>
-                      {[customer.email, customer.phone, customer.address]
-                        .filter(Boolean)
-                        .join(" · ") || "No contact details"}
-                      {" · "}
-                      {customer.projects.length} project
-                      {customer.projects.length === 1 ? "" : "s"}
-                    </CardDescription>
+        <div className="space-y-4">
+          {rows.length === 0 ? (
+            <div className="dash-card flex flex-col items-center gap-3 py-10 text-center">
+              <p className="text-sm text-[var(--color-ink-muted)]">
+                No customers yet.
+              </p>
+              <Button type="button" onClick={() => setAddOpen(true)}>
+                <Plus />
+                Add Customer
+              </Button>
+            </div>
+          ) : (
+            rows.map((customer) => (
+              <Card key={customer.id}>
+                <CardHeader>
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <CardTitle>{customer.name}</CardTitle>
+                      <CardDescription>
+                        {[customer.email, customer.phone, customer.address]
+                          .filter(Boolean)
+                          .join(" · ") || "No contact details"}
+                        {" · "}
+                        {customer.projects.length} project
+                        {customer.projects.length === 1 ? "" : "s"}
+                      </CardDescription>
+                    </div>
+                    <Form method="post">
+                      <input
+                        type="hidden"
+                        name="intent"
+                        value="delete-customer"
+                      />
+                      <input type="hidden" name="id" value={customer.id} />
+                      <Button type="submit" variant="destructive" size="sm">
+                        Delete
+                      </Button>
+                    </Form>
                   </div>
-                  <Form method="post">
-                    <input type="hidden" name="intent" value="delete-customer" />
-                    <input type="hidden" name="id" value={customer.id} />
-                    <Button type="submit" variant="destructive" size="sm">
-                      Delete
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <p className="field-label mb-2">Projects</p>
+                    {customer.projects.length === 0 ? (
+                      <p className="text-sm text-[var(--color-ink-muted)]">
+                        No projects.
+                      </p>
+                    ) : (
+                      <ul className="space-y-1 text-sm">
+                        {customer.projects.map((p) => (
+                          <li key={p.id}>
+                            <Link
+                              to={`/?projectId=${p.id}`}
+                              className="text-[var(--color-accent-deep)] hover:underline"
+                            >
+                              {p.name}
+                            </Link>
+                            {" · "}
+                            <Link
+                              to={`/projects/${p.id}/invoice`}
+                              className="text-[var(--color-ink-muted)] hover:underline"
+                            >
+                              invoice
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                  <Form method="post" className="flex flex-wrap items-end gap-2">
+                    <input type="hidden" name="intent" value="create-project" />
+                    <input
+                      type="hidden"
+                      name="customerId"
+                      value={customer.id}
+                    />
+                    <div className="min-w-[200px] flex-1 space-y-1.5">
+                      <Label>New Project</Label>
+                      <Input name="name" placeholder="Project Name" required />
+                    </div>
+                    <Button type="submit" variant="secondary">
+                      Add Project
                     </Button>
                   </Form>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <p className="field-label mb-2">Projects</p>
-                  {customer.projects.length === 0 ? (
-                    <p className="text-sm text-[var(--color-ink-muted)]">No projects.</p>
-                  ) : (
-                    <ul className="space-y-1 text-sm">
-                      {customer.projects.map((p) => (
-                        <li key={p.id}>
-                          <Link
-                            to={`/?projectId=${p.id}`}
-                            className="text-[var(--color-accent-deep)] hover:underline"
-                          >
-                            {p.name}
-                          </Link>
-                          {" · "}
-                          <Link
-                            to={`/projects/${p.id}/invoice`}
-                            className="text-[var(--color-ink-muted)] hover:underline"
-                          >
-                            invoice
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-                <Form method="post" className="flex flex-wrap items-end gap-2">
-                  <input type="hidden" name="intent" value="create-project" />
-                  <input type="hidden" name="customerId" value={customer.id} />
-                  <div className="min-w-[200px] flex-1">
-                    <Label>New Project</Label>
-                    <Input name="name" placeholder="Project Name" required />
-                  </div>
-                  <Button type="submit" variant="secondary">
-                    Add Project
-                  </Button>
-                </Form>
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
       </div>
     </main>
   );

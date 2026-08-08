@@ -27,6 +27,19 @@ export const links: Route.LinksFunction = () => [
   { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
   { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
   { rel: "manifest", href: "/site.webmanifest" },
+  {
+    rel: "dns-prefetch",
+    href: "https://www.googletagmanager.com",
+  },
+  {
+    rel: "preconnect",
+    href: "https://www.googletagmanager.com",
+    crossOrigin: "anonymous",
+  },
+  {
+    rel: "dns-prefetch",
+    href: "https://www.google-analytics.com",
+  },
 ];
 
 export function headers() {
@@ -74,7 +87,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
         <Links />
-        <GoogleAnalytics />
       </head>
       <body>
         {children}
@@ -89,6 +101,7 @@ export default function App() {
   const { user } = useLoaderData<typeof loader>();
   return (
     <AppShell user={user}>
+      <GoogleAnalytics />
       <GoogleAnalyticsPageViews />
       <Outlet />
     </AppShell>

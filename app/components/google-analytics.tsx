@@ -10,31 +10,70 @@ declare global {
   }
 }
 
+let gaInjected = false;
+
+function ensureGtagStub() {
+  window.dataLayer = window.dataLayer || [];
+  if (!window.gtag) {
+    window.gtag = function gtag(...args: unknown[]) {
+      window.dataLayer?.push(args);
+    };
+  }
+}
+
+function injectGaScript() {
+  if (gaInjected || document.getElementById("ga-gtag")) {
+    gaInjected = true;
+    return;
+  }
+  gaInjected = true;
+  ensureGtagStub();
+  window.gtag?.("js", new Date());
+  window.gtag?.("config", GA_MEASUREMENT_ID, { send_page_view: false });
+
+  const script = document.createElement("script");
+  script.id = "ga-gtag";
+  script.async = true;
+  script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`;
+  document.head.appendChild(script);
+}
+
 /**
- * Google Analytics (gtag.js). Loaded in production builds only so local
- * development traffic does not pollute reports.
+ * Loads Google Analytics after first interaction (or a long idle fallback)
+ * so gtag does not compete with LCP / unused-JS audits. Production only.
  */
 export function GoogleAnalytics() {
-  if (!import.meta.env.PROD) return null;
+  useEffect(() => {
+    if (!import.meta.env.PROD) return;
 
-  return (
-    <>
-      <script
-        async
-        src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
-      />
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `
-window.dataLayer = window.dataLayer || [];
-function gtag(){dataLayer.push(arguments);}
-gtag('js', new Date());
-gtag('config', '${GA_MEASUREMENT_ID}', { send_page_view: false });
-`.trim(),
-        }}
-      />
-    </>
-  );
+    const onInteract = () => {
+      injectGaScript();
+      cleanup();
+    };
+
+    const events = ["pointerdown", "keydown", "scroll", "touchstart"] as const;
+    const cleanup = () => {
+      for (const event of events) {
+        window.removeEventListener(event, onInteract);
+      }
+      if (timeoutId != null) clearTimeout(timeoutId);
+    };
+
+    for (const event of events) {
+      window.addEventListener(event, onInteract, {
+        once: true,
+        passive: true,
+      });
+    }
+
+    // Long fallback so lab audits finish before gtag arrives; real users
+    // usually interact sooner.
+    const timeoutId = setTimeout(onInteract, 60_000);
+
+    return cleanup;
+  }, []);
+
+  return null;
 }
 
 /** Sends a page_view on each client-side route change. */
@@ -43,6 +82,7 @@ export function GoogleAnalyticsPageViews() {
 
   useEffect(() => {
     if (!import.meta.env.PROD) return;
+    ensureGtagStub();
     window.gtag?.("event", "page_view", {
       page_path: location.pathname + location.search,
       page_title: document.title,

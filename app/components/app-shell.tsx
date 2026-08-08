@@ -63,30 +63,32 @@ export function AppShell({
       <header className="sticky top-0 z-40 bg-[var(--color-paper)]/85 backdrop-blur-xl">
         <div className="page-shell !py-3 sm:!py-4">
           <div className="flex items-center justify-between gap-4">
-            <Link
-              to="/"
-              className="flex items-center gap-2.5 font-display text-lg font-extrabold tracking-tight"
-            >
-              <BrandMark />
-              <span>PrintCost</span>
-            </Link>
+            <div className="flex min-w-0 items-center gap-4 md:gap-6">
+              <Link
+                to="/"
+                className="flex items-center gap-2.5 font-display text-lg font-extrabold tracking-tight"
+              >
+                <BrandMark />
+                <span>PrintCost</span>
+              </Link>
 
-            <nav className="hidden items-center gap-1 rounded-full bg-white/80 p-1 shadow-[0_4px_20px_rgba(22,22,26,0.04)] ring-1 ring-[var(--color-line)] md:flex">
-              {visible.map((link) => (
-                <Link
-                  key={link.to}
-                  to={link.to}
-                  className={cn(
-                    "rounded-full px-4 py-2 text-sm font-semibold transition-colors",
-                    isActive(link.to)
-                      ? "bg-[var(--color-paper)] text-[var(--color-ink)] shadow-sm"
-                      : "text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]",
-                  )}
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </nav>
+              <nav className="hidden items-center gap-1 rounded-full bg-white/80 p-1 shadow-[0_4px_20px_rgba(22,22,26,0.04)] ring-1 ring-[var(--color-line)] md:flex">
+                {visible.map((link) => (
+                  <Link
+                    key={link.to}
+                    to={link.to}
+                    className={cn(
+                      "rounded-full px-4 py-2 text-sm font-semibold transition-colors",
+                      isActive(link.to)
+                        ? "bg-[var(--color-paper)] text-[var(--color-ink)] shadow-sm"
+                        : "text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]",
+                    )}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </nav>
+            </div>
 
             <div className="flex items-center gap-2">
               {user ? (
@@ -113,7 +115,7 @@ export function AppShell({
                       type="submit"
                       variant="secondary"
                       size="icon"
-                      aria-label="Sign out"
+                      aria-label="Sign Out"
                     >
                       <LogOut />
                     </Button>
@@ -124,7 +126,7 @@ export function AppShell({
                   <Link
                     to={`/login?redirectTo=${encodeURIComponent(location.pathname)}`}
                   >
-                    Sign in
+                    Sign In
                   </Link>
                 </Button>
               )}
@@ -163,7 +165,7 @@ export function AppShell({
               {user ? (
                 <Form method="post" action="/logout">
                   <Button type="submit" variant="secondary" className="mt-2 w-full">
-                    Sign out
+                    Sign Out
                   </Button>
                 </Form>
               ) : null}

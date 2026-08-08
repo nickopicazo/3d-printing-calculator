@@ -108,7 +108,7 @@ export default function MaterialsPage() {
 
       <Card className="mb-8 animate-fade-up-delay">
         <CardHeader>
-          <CardTitle>Add material</CardTitle>
+          <CardTitle>Add Material</CardTitle>
           <CardDescription>
             Choose filament or resin and set the unit price.
           </CardDescription>
@@ -128,8 +128,8 @@ export default function MaterialsPage() {
                 defaultValue="filament"
                 className="flex h-10 w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] px-3 text-sm"
               >
-                <option value="filament">Filament (per kg)</option>
-                <option value="resin">Resin (per L)</option>
+                <option value="filament">Filament (Per Kg)</option>
+                <option value="resin">Resin (Per L)</option>
               </select>
             </div>
             <div>
@@ -141,7 +141,7 @@ export default function MaterialsPage() {
               <Input id="color" name="color" placeholder="#D3C5A3" />
             </div>
             <div>
-              <Label htmlFor="pricePerUnit">Price / unit</Label>
+              <Label htmlFor="pricePerUnit">Price / Unit</Label>
               <Input
                 id="pricePerUnit"
                 name="pricePerUnit"
@@ -156,7 +156,7 @@ export default function MaterialsPage() {
               <p className="text-sm text-[#a33b2b] sm:col-span-2">{actionData.error}</p>
             ) : null}
             <div className="sm:col-span-2">
-              <Button type="submit">Save material</Button>
+              <Button type="submit">Save Material</Button>
             </div>
           </Form>
         </CardContent>

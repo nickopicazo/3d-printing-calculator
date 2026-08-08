@@ -1,4 +1,5 @@
 import { ChevronDown } from "lucide-react";
+import { useState } from "react";
 import { Button } from "~/components/ui/button";
 import {
   Collapsible,
@@ -11,6 +12,7 @@ import {
   suggestedMachineRate,
   type AppSettings,
 } from "~/lib/settings";
+import { cn } from "~/lib/utils";
 
 type Props = {
   settings: AppSettings;
@@ -19,6 +21,7 @@ type Props = {
 };
 
 export function AdvancedSettingsPanel({ settings, onChange, showSla }: Props) {
+  const [open, setOpen] = useState(false);
   const suggested = suggestedMachineRate(settings);
 
   function set<K extends keyof AppSettings>(key: K, value: AppSettings[K]) {
@@ -26,20 +29,30 @@ export function AdvancedSettingsPanel({ settings, onChange, showSla }: Props) {
   }
 
   return (
-    <Collapsible className="dash-card !p-0 overflow-hidden">
+    <Collapsible
+      open={open}
+      onOpenChange={setOpen}
+      className="dash-card !p-0 overflow-hidden"
+    >
       <CollapsibleTrigger asChild>
         <Button
           type="button"
           variant="ghost"
           className="flex w-full items-center justify-between rounded-none px-5 py-4 font-semibold"
         >
-          Advanced settings
-          <ChevronDown className="size-4" />
+          Advanced Settings
+          <ChevronDown
+            className={cn(
+              "size-4 transition-transform",
+              open && "rotate-180",
+            )}
+          />
         </Button>
       </CollapsibleTrigger>
       <CollapsibleContent className="space-y-4 border-t border-[var(--color-line)] px-5 py-4">
         <p className="text-sm text-[var(--color-ink-muted)]">
-          Electricity, labor rate, failure uplift, and depreciation helpers.
+          Optional. Leave blank (0) to exclude from the estimate — electricity,
+          labor rate, failure uplift, and depreciation helpers.
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
@@ -66,7 +79,7 @@ export function AdvancedSettingsPanel({ settings, onChange, showSla }: Props) {
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="labor-rate">Labor rate / hour</Label>
+            <Label htmlFor="labor-rate">Labor Rate / Hour</Label>
             <Input
               id="labor-rate"
               type="number"
@@ -90,7 +103,7 @@ export function AdvancedSettingsPanel({ settings, onChange, showSla }: Props) {
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="purchase">Printer purchase price</Label>
+            <Label htmlFor="purchase">Printer Purchase Price</Label>
             <Input
               id="purchase"
               type="number"
@@ -102,7 +115,7 @@ export function AdvancedSettingsPanel({ settings, onChange, showSla }: Props) {
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="lifespan">Lifespan (hours)</Label>
+            <Label htmlFor="lifespan">Lifespan (Hours)</Label>
             <Input
               id="lifespan"
               type="number"
@@ -133,7 +146,7 @@ export function AdvancedSettingsPanel({ settings, onChange, showSla }: Props) {
         {showSla ? (
           <div className="grid gap-3 border-t border-[var(--color-line)] pt-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="sla-consumables">SLA consumables / print</Label>
+              <Label htmlFor="sla-consumables">SLA Consumables / Print</Label>
               <Input
                 id="sla-consumables"
                 type="number"
@@ -145,7 +158,7 @@ export function AdvancedSettingsPanel({ settings, onChange, showSla }: Props) {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="sla-waste">SLA support / waste %</Label>
+              <Label htmlFor="sla-waste">SLA Support / Waste %</Label>
               <Input
                 id="sla-waste"
                 type="number"

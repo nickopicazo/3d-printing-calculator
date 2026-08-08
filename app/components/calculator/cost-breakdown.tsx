@@ -40,7 +40,7 @@ function Row({
 export function CostBreakdown({
   breakdown,
   currencySymbol,
-  title = "Cost breakdown",
+  title = "Cost Breakdown",
   variant = "light",
 }: Props) {
   const m = (n: number) => formatMoney(n, currencySymbol);
@@ -80,9 +80,9 @@ export function CostBreakdown({
         <Row dark={dark} label="Labor" value={m(breakdown.laborCost)} />
         <Row dark={dark} label="Machine" value={m(breakdown.machineCost)} />
         <Row dark={dark} label="Electricity" value={m(breakdown.electricityCost)} />
-        <Row dark={dark} label="Landed cost" value={m(breakdown.landed)} muted />
+        <Row dark={dark} label="Landed Cost" value={m(breakdown.landed)} muted />
         {breakdown.failureUplift > 0 ? (
-          <Row dark={dark} label="Failure uplift" value={m(breakdown.failureUplift)} />
+          <Row dark={dark} label="Failure Uplift" value={m(breakdown.failureUplift)} />
         ) : null}
         <Row dark={dark} label="Markup" value={m(breakdown.markupAmount)} />
         {breakdown.vatAmount > 0 ? (

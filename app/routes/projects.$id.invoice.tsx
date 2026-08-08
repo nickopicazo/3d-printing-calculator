@@ -79,7 +79,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
         pricePerUnit: m.pricePerUnit,
       })),
     plates: plateRows
-      .filter((pl) => pl.printId === p.id && pl.imagePath)
+      .filter((pl) => pl.printId === p.id && pl.sliced && pl.imagePath)
       .map((pl) => ({
         plateIndex: pl.plateIndex,
         imageUrl: `/uploads/${pl.imagePath}`,
@@ -126,7 +126,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
 
 export default function ProjectInvoicePage() {
   const data = useLoaderData<typeof loader>();
-  const symbol = DEFAULT_SETTINGS.currencySymbol;
+  const symbol = DEFAULT_SETTINGS.currencyCode;
   const m = (n: number) => formatMoney(n, symbol);
 
   useEffect(() => {
@@ -155,7 +155,7 @@ export default function ProjectInvoicePage() {
       {data.customerName ? (
         <section className="mb-6">
           <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-neutral-500">
-            Bill to
+            Bill To
           </h2>
           <p className="font-semibold">{data.customerName}</p>
           {data.customerEmail ? <p>{data.customerEmail}</p> : null}
@@ -223,7 +223,7 @@ export default function ProjectInvoicePage() {
         </div>
         {data.totals.failureUplift > 0 ? (
           <div className="flex justify-between">
-            <span>Failure uplift</span>
+            <span>Failure Uplift</span>
             <span>{m(data.totals.failureUplift)}</span>
           </div>
         ) : null}

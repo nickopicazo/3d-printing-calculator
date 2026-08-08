@@ -116,7 +116,7 @@ export default function CustomersPage() {
 
       <Card className="mb-8 animate-fade-up-delay">
         <CardHeader>
-          <CardTitle>Add customer</CardTitle>
+          <CardTitle>Add Customer</CardTitle>
           <CardDescription>Name, contact, and address.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -142,7 +142,7 @@ export default function CustomersPage() {
               <p className="text-sm text-[#a33b2b] sm:col-span-2">{actionData.error}</p>
             ) : null}
             <div className="sm:col-span-2">
-              <Button type="submit">Save customer</Button>
+              <Button type="submit">Save Customer</Button>
             </div>
           </Form>
         </CardContent>
@@ -207,11 +207,11 @@ export default function CustomersPage() {
                   <input type="hidden" name="intent" value="create-project" />
                   <input type="hidden" name="customerId" value={customer.id} />
                   <div className="min-w-[200px] flex-1">
-                    <Label>New project</Label>
-                    <Input name="name" placeholder="Project name" required />
+                    <Label>New Project</Label>
+                    <Input name="name" placeholder="Project Name" required />
                   </div>
                   <Button type="submit" variant="secondary">
-                    Add project
+                    Add Project
                   </Button>
                 </Form>
               </CardContent>

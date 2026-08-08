@@ -13,7 +13,7 @@ import { getSession } from "~/lib/session.server";
 import { redirect } from "react-router";
 
 export function meta({}: Route.MetaArgs) {
-  return [{ title: "Sign in · 3D Printing Calculator" }];
+  return [{ title: "Sign In · 3D Printing Calculator" }];
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -40,7 +40,7 @@ export default function LoginPage() {
     <main className="mx-auto flex min-h-[70vh] max-w-md items-center px-4 py-16">
       <Card className="w-full animate-fade-up">
         <CardHeader>
-          <CardTitle className="text-3xl">Sign in</CardTitle>
+          <CardTitle className="text-3xl">Sign In</CardTitle>
           <CardDescription>
             Use Google to save projects, manage materials, and keep customers
             organized.
@@ -48,7 +48,7 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <Button type="button" className="w-full" onClick={() => void signInGoogle()}>
-            Continue with Google
+            Continue With Google
           </Button>
           <p className="text-center text-sm text-[var(--color-ink-muted)]">
             Or{" "}

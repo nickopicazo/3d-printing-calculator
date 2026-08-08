@@ -187,14 +187,18 @@ export default function CustomersPage() {
           </DialogContent>
         </Dialog>
 
-        <header className="mb-8 flex flex-wrap items-start justify-between gap-4 animate-fade-up">
-          <div>
-            <h1 className="font-display text-3xl font-extrabold">Customers</h1>
-            <p className="mt-2 text-[var(--color-ink-muted)]">
+        <header className="mb-6 flex flex-col gap-4 animate-fade-up sm:mb-8 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <h1 className="font-display text-2xl font-extrabold sm:text-3xl">Customers</h1>
+            <p className="mt-2 text-sm text-[var(--color-ink-muted)] sm:text-base">
               Save contact details and attach projects for invoicing.
             </p>
           </div>
-          <Button type="button" onClick={() => setAddOpen(true)}>
+          <Button
+            type="button"
+            className="w-full shrink-0 sm:w-auto"
+            onClick={() => setAddOpen(true)}
+          >
             <Plus />
             Add Customer
           </Button>

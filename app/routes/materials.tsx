@@ -308,14 +308,18 @@ export default function MaterialsPage() {
           </DialogContent>
         </Dialog>
 
-        <header className="mb-8 flex flex-wrap items-start justify-between gap-4 animate-fade-up">
-          <div>
-            <h1 className="font-display text-3xl font-extrabold">Materials</h1>
-            <p className="mt-2 text-[var(--color-ink-muted)]">
+        <header className="mb-6 flex flex-col gap-4 animate-fade-up sm:mb-8 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <h1 className="font-display text-2xl font-extrabold sm:text-3xl">Materials</h1>
+            <p className="mt-2 text-sm text-[var(--color-ink-muted)] sm:text-base">
               Filament and resin inventory for the calculator.
             </p>
           </div>
-          <Button type="button" onClick={() => setAddOpen(true)}>
+          <Button
+            type="button"
+            className="w-full shrink-0 sm:w-auto"
+            onClick={() => setAddOpen(true)}
+          >
             <Plus />
             Add Material
           </Button>
@@ -430,45 +434,48 @@ export default function MaterialsPage() {
                         </div>
                       </Form>
                     ) : (
-                      <div className="flex flex-wrap items-center gap-4">
-                        <span
-                          className="size-11 shrink-0 rounded-2xl border border-[var(--color-line)] shadow-inner"
-                          style={{ background: hex ?? "#E4E4E8" }}
-                          title={hex ?? "No color"}
-                          aria-hidden
-                        />
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className="truncate font-display text-base font-bold">
-                              {row.name}
+                      <div className="flex w-full flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-4">
+                        <div className="flex min-w-0 flex-1 items-center gap-3">
+                          <span
+                            className="size-11 shrink-0 rounded-2xl border border-[var(--color-line)] shadow-inner"
+                            style={{ background: hex ?? "#E4E4E8" }}
+                            title={hex ?? "No color"}
+                            aria-hidden
+                          />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="truncate font-display text-base font-bold">
+                                {row.name}
+                              </p>
+                              <span
+                                className={cn(
+                                  "rounded-full px-2.5 py-0.5 text-[11px] font-semibold",
+                                  row.kind === "resin"
+                                    ? "bg-[rgba(111,82,240,0.12)] text-[var(--color-accent-deep)]"
+                                    : "bg-[var(--color-paper)] text-[var(--color-ink-muted)]",
+                                )}
+                              >
+                                {row.kind === "resin" ? "Resin" : "Filament"}
+                              </span>
+                            </div>
+                            <p className="mt-0.5 text-sm text-[var(--color-ink-muted)]">
+                              {row.type?.trim() || "No type"}
+                              {hex ? ` · ${hex}` : ""}
                             </p>
-                            <span
-                              className={cn(
-                                "rounded-full px-2.5 py-0.5 text-[11px] font-semibold",
-                                row.kind === "resin"
-                                  ? "bg-[rgba(111,82,240,0.12)] text-[var(--color-accent-deep)]"
-                                  : "bg-[var(--color-paper)] text-[var(--color-ink-muted)]",
-                              )}
-                            >
-                              {row.kind === "resin" ? "Resin" : "Filament"}
-                            </span>
                           </div>
-                          <p className="mt-0.5 text-sm text-[var(--color-ink-muted)]">
-                            {row.type?.trim() || "No type"}
-                            {hex ? ` · ${hex}` : ""}
+                          <p className="shrink-0 font-display text-lg font-extrabold tabular-nums text-[var(--color-accent-deep)]">
+                            {formatMoney(row.pricePerUnit, currency)}
+                            <span className="ml-1 text-xs font-semibold text-[var(--color-ink-muted)]">
+                              /{unit}
+                            </span>
                           </p>
                         </div>
-                        <p className="shrink-0 font-display text-lg font-extrabold tabular-nums text-[var(--color-accent-deep)]">
-                          {formatMoney(row.pricePerUnit, currency)}
-                          <span className="ml-1 text-xs font-semibold text-[var(--color-ink-muted)]">
-                            /{unit}
-                          </span>
-                        </p>
-                        <div className="flex shrink-0 gap-2">
+                        <div className="grid grid-cols-2 gap-2 sm:flex sm:shrink-0">
                           <Button
                             type="button"
                             size="sm"
                             variant="secondary"
+                            className="w-full sm:w-auto"
                             onClick={() => setEditingId(row.id)}
                           >
                             <Pencil />
@@ -478,6 +485,7 @@ export default function MaterialsPage() {
                             type="button"
                             size="sm"
                             variant="destructive"
+                            className="w-full sm:w-auto"
                             onClick={() =>
                               setPendingDelete({ id: row.id, name: row.name })
                             }

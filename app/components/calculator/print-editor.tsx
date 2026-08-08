@@ -117,9 +117,9 @@ export function PrintEditor({
             </p>
           ) : null}
         </div>
-        <div className="flex flex-wrap items-center gap-2 self-end">
+        <div className="flex w-full flex-col gap-2 self-stretch sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:self-end">
           {loggedIn && onUploadFiles && print.technology === "fdm" ? (
-            <label className="inline-flex">
+            <label className="inline-flex w-full sm:w-auto">
               <input
                 type="file"
                 accept=".gcode,.3mf,.zip,.gcode.3mf"
@@ -133,8 +133,8 @@ export function PrintEditor({
                   e.target.value = "";
                 }}
               />
-              <Button type="button" asChild>
-                <span className="inline-flex cursor-pointer items-center gap-2">
+              <Button type="button" className="w-full sm:w-auto" asChild>
+                <span className="inline-flex cursor-pointer items-center justify-center gap-2">
                   <Upload className="size-4" aria-hidden />
                   {uploading ? "Importing…" : "Upload 3MF / G-code"}
                 </span>
@@ -142,7 +142,12 @@ export function PrintEditor({
             </label>
           ) : null}
           {canRemove && onRemove ? (
-            <Button type="button" variant="destructive" onClick={onRemove}>
+            <Button
+              type="button"
+              variant="destructive"
+              className="w-full sm:w-auto"
+              onClick={onRemove}
+            >
               Remove Print
             </Button>
           ) : null}

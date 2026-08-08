@@ -91,9 +91,10 @@ export function Combobox({
       </PopoverTrigger>
       <PopoverContent
         className={cn(
-          "w-[var(--radix-popover-trigger-width)] p-0",
-          "min-w-[16rem]",
+          "w-[var(--radix-popover-trigger-width)] max-w-[calc(100vw-2rem)] p-0",
+          "min-w-[min(100%,16rem)]",
         )}
+        collisionPadding={16}
         align="start"
       >
         <Command shouldFilter={false}>

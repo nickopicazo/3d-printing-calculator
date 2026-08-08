@@ -1,7 +1,16 @@
 import { Form, Link, useLocation } from "react-router";
-import { LogOut, Menu, X } from "lucide-react";
-import { useState } from "react";
+import { LogOut, Menu } from "lucide-react";
+import { useEffect, useState } from "react";
 import { Button } from "~/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "~/components/ui/sheet";
 import { cn } from "~/lib/utils";
 
 export type NavUser = {
@@ -49,6 +58,10 @@ export function AppShell({
 
   const visible = links.filter((l) => !l.auth || user);
 
+  useEffect(() => {
+    setOpen(false);
+  }, [location.pathname, location.search]);
+
   function isActive(to: string, match?: string) {
     const path = match ?? to;
     return (
@@ -62,16 +75,21 @@ export function AppShell({
       <a href="#main-content" className="skip-link">
         Skip to content
       </a>
-      <header className="sticky top-0 z-40 shrink-0 bg-[var(--color-paper)]/85 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 shrink-0 border-b border-[var(--color-line)] bg-white">
         <div className="page-shell !py-3 sm:!py-4">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex min-w-0 items-center gap-4 md:gap-6">
+          <div className="flex items-center justify-between gap-2 sm:gap-4">
+            <div className="flex min-w-0 items-center gap-3 md:gap-6">
               <Link
                 to="/"
-                className="flex min-w-0 items-center gap-2.5 font-display text-base font-extrabold tracking-tight sm:text-lg"
+                className="flex min-w-0 items-center gap-2 font-display text-base font-extrabold tracking-tight sm:gap-2.5 sm:text-lg"
               >
                 <BrandMark />
-                <span className="truncate">3D Printing Calculator</span>
+                <span className="truncate">
+                  <span className="sm:hidden">3D Calculator</span>
+                  <span className="hidden sm:inline">
+                    3D Printing Calculator
+                  </span>
+                </span>
               </Link>
 
               <nav
@@ -95,7 +113,7 @@ export function AppShell({
               </nav>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
               {user ? (
                 <div className="hidden items-center gap-3 sm:flex">
                   <div className="text-right text-xs">
@@ -131,7 +149,7 @@ export function AppShell({
                   </Form>
                 </div>
               ) : (
-                <Button asChild size="sm">
+                <Button asChild size="sm" className="hidden sm:inline-flex">
                   <Link
                     to={`/login?redirectTo=${encodeURIComponent(location.pathname)}`}
                   >
@@ -139,53 +157,102 @@ export function AppShell({
                   </Link>
                 </Button>
               )}
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="md:hidden"
-                onClick={() => setOpen((v) => !v)}
-                aria-label={open ? "Close menu" : "Open menu"}
-                aria-expanded={open}
-                aria-controls="mobile-nav"
-              >
-                {open ? <X /> : <Menu />}
-              </Button>
+
+              <Sheet open={open} onOpenChange={setOpen}>
+                <SheetTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-11 w-11 md:hidden [&_svg]:size-6"
+                    aria-label="Open menu"
+                    aria-controls="mobile-nav"
+                  >
+                    <Menu strokeWidth={2.25} />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent id="mobile-nav" side="right">
+                  <SheetHeader>
+                    <SheetTitle>Menu</SheetTitle>
+                    <SheetDescription className="sr-only">
+                      Site navigation
+                    </SheetDescription>
+                  </SheetHeader>
+
+                  {user ? (
+                    <div className="flex items-center gap-3 rounded-2xl border border-[var(--color-line)] bg-[var(--color-paper)]/70 p-3">
+                      {user.image ? (
+                        <img
+                          src={user.image}
+                          alt=""
+                          width={40}
+                          height={40}
+                          className="size-10 rounded-full object-cover ring-2 ring-white"
+                          decoding="async"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <div className="flex size-10 items-center justify-center rounded-full bg-[var(--color-accent)] text-sm font-bold text-white">
+                          {user.name.slice(0, 1).toUpperCase()}
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold text-[var(--color-ink)]">
+                          {user.name}
+                        </p>
+                        <p className="truncate text-xs text-[var(--color-ink-muted)]">
+                          {user.email}
+                        </p>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <nav aria-label="Mobile" className="flex flex-col gap-1">
+                    {visible.map((link) => (
+                      <Link
+                        key={link.to}
+                        to={link.to}
+                        onClick={() => setOpen(false)}
+                        className={cn(
+                          "rounded-xl px-3 py-3 text-base font-semibold transition-colors",
+                          isActive(link.to, link.match)
+                            ? "bg-[var(--color-paper)] text-[var(--color-ink)]"
+                            : "text-[var(--color-ink)] hover:bg-[var(--color-paper)]",
+                        )}
+                      >
+                        {link.label}
+                      </Link>
+                    ))}
+                  </nav>
+
+                  <SheetFooter>
+                    {user ? (
+                      <Form method="post" action="/logout">
+                        <Button
+                          type="submit"
+                          variant="secondary"
+                          className="w-full"
+                        >
+                          <LogOut />
+                          Sign Out
+                        </Button>
+                      </Form>
+                    ) : (
+                      <Button asChild className="w-full">
+                        <Link
+                          to={`/login?redirectTo=${encodeURIComponent(location.pathname)}`}
+                          onClick={() => setOpen(false)}
+                        >
+                          Sign In
+                        </Link>
+                      </Button>
+                    )}
+                  </SheetFooter>
+                </SheetContent>
+              </Sheet>
             </div>
           </div>
         </div>
-
-        {open && (
-          <div
-            id="mobile-nav"
-            className="border-t border-[var(--color-line)] px-5 py-3 md:hidden"
-          >
-            <nav aria-label="Mobile" className="flex flex-col gap-1">
-              {visible.map((link) => (
-                <Link
-                  key={link.to}
-                  to={link.to}
-                  onClick={() => setOpen(false)}
-                  className={cn(
-                    "rounded-full px-3 py-2 text-sm font-semibold",
-                    isActive(link.to, link.match)
-                      ? "bg-white text-[var(--color-ink)]"
-                      : "text-[var(--color-ink)]",
-                  )}
-                >
-                  {link.label}
-                </Link>
-              ))}
-              {user ? (
-                <Form method="post" action="/logout">
-                  <Button type="submit" variant="secondary" className="mt-2 w-full">
-                    Sign Out
-                  </Button>
-                </Form>
-              ) : null}
-            </nav>
-          </div>
-        )}
       </header>
 
       <div id="main-content" className="flex-1">
@@ -205,7 +272,10 @@ export function AppShell({
                 time, labor, electricity, and printable quotes.
               </p>
             </div>
-            <nav aria-label="Footer" className="flex flex-wrap gap-x-5 gap-y-2 text-sm">
+            <nav
+              aria-label="Footer"
+              className="flex flex-wrap gap-x-5 gap-y-2 text-sm"
+            >
               <Link
                 to="/"
                 className="font-semibold text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"

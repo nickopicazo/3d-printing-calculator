@@ -15,9 +15,10 @@ const PopoverContent = React.forwardRef<
       align={align}
       sideOffset={sideOffset}
       className={cn(
-        "z-50 w-72 rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] p-4 text-[var(--color-ink)] shadow-md outline-none",
+        "z-50 w-[min(100vw-2rem,18rem)] rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] p-4 text-[var(--color-ink)] shadow-md outline-none",
         className,
       )}
+      collisionPadding={16}
       {...props}
     />
   </PopoverPrimitive.Portal>

@@ -737,9 +737,9 @@ export default function Home() {
           if (pendingDelete) void deleteSavedProject(pendingDelete.id);
         }}
       />
-      <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="font-display text-3xl font-extrabold tracking-tight sm:text-4xl">
+      <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="font-display text-2xl font-extrabold tracking-tight sm:text-3xl lg:text-4xl">
             3D Printing Cost Calculator
           </h1>
           <p className="mt-1.5 text-sm text-[var(--color-ink-muted)]">
@@ -748,18 +748,19 @@ export default function Home() {
             Estimate FDM &amp; SLA print costs
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
           {loggedIn ? (
             <Button
               type="button"
               disabled={busy}
+              className="col-span-2 sm:col-span-1"
               onClick={() => void saveProject()}
             >
               <Save />
               Save Project
             </Button>
           ) : (
-            <Button asChild>
+            <Button asChild className="col-span-2 sm:col-span-1">
               <Link to="/login">Sign In to Save</Link>
             </Button>
           )}
@@ -996,12 +997,12 @@ export default function Home() {
 
           {activePrintId ? (
             <div className="space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <h2 className="font-display text-2xl font-extrabold tracking-tight">
+              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+                <h2 className="font-display text-xl font-extrabold tracking-tight sm:text-2xl">
                   Prints
                 </h2>
                 {loggedIn ? (
-                  <label className="inline-flex">
+                  <label className="inline-flex w-full sm:w-auto">
                     <input
                       type="file"
                       accept=".gcode,.3mf,.zip,.gcode.3mf"
@@ -1019,12 +1020,18 @@ export default function Home() {
                         e.target.value = "";
                       }}
                     />
-                    <Button type="button" variant="secondary" size="sm" asChild>
-                      <span className="inline-flex cursor-pointer items-center gap-2">
-                        <Upload className="size-4" />
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      className="w-full sm:w-auto"
+                      asChild
+                    >
+                      <span className="inline-flex cursor-pointer items-center justify-center gap-2">
+                        <Upload className="size-4" aria-hidden />
                         {uploadPrintId != null
                           ? "Importing…"
-                          : "Upload Multiple 3MF / G-code"}
+                          : "Upload 3MF / G-code"}
                       </span>
                     </Button>
                   </label>
@@ -1054,8 +1061,8 @@ export default function Home() {
                 onValueChange={setActivePrintId}
                 className="dash-card !p-0"
               >
-                <div className="flex items-center gap-2 border-b border-[var(--color-line)] bg-[var(--color-paper)]/70 px-3 py-2 sm:px-4">
-                  <div className="min-w-0 flex-1 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:thin]">
+                <div className="flex items-center gap-1.5 border-b border-[var(--color-line)] bg-[var(--color-paper)]/70 px-2 py-2 sm:gap-2 sm:px-4">
+                  <div className="min-w-0 flex-1 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                     <TabsList className="inline-flex h-auto w-max min-w-0 flex-nowrap justify-start gap-1 border-0 bg-transparent p-0">
                       {project.prints.map((print, index) => {
                         const label =
@@ -1065,7 +1072,7 @@ export default function Home() {
                             key={print.id}
                             value={print.id}
                             title={label}
-                            className="max-w-[14rem] shrink-0 truncate data-[state=active]:bg-white"
+                            className="max-w-[10rem] shrink-0 truncate data-[state=active]:bg-white sm:max-w-[14rem]"
                           >
                             {label}
                           </TabsTrigger>
@@ -1078,10 +1085,11 @@ export default function Home() {
                     variant="ghost"
                     size="sm"
                     onClick={addPrint}
-                    className="h-8 shrink-0 rounded-full px-3 text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
+                    className="h-8 shrink-0 rounded-full px-2.5 text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] sm:px-3"
                   >
                     <Plus />
-                    Add Print
+                    <span className="hidden sm:inline">Add Print</span>
+                    <span className="sm:hidden">Add</span>
                   </Button>
                 </div>
 
@@ -1175,18 +1183,18 @@ export default function Home() {
                   : "Estimated Total"
               }
             />
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
               <Button
                 type="button"
                 variant="secondary"
-                className="flex-1"
+                className="w-full flex-1"
                 onClick={() => window.print()}
               >
                 <Printer />
                 Print Quote
               </Button>
               {loggedIn && project.id ? (
-                <Button asChild variant="secondary" className="flex-1">
+                <Button asChild variant="secondary" className="w-full flex-1">
                   <Link to={`/projects/${project.id}/invoice`}>
                     <Download />
                     Export PDF

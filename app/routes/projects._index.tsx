@@ -180,14 +180,14 @@ export default function ProjectsIndexPage() {
           if (pendingDelete) void deleteProject(pendingDelete.id);
         }}
       />
-      <header className="mb-8 flex flex-wrap items-end justify-between gap-4 animate-fade-up">
-        <div>
-          <h1 className="font-display text-3xl font-extrabold">Projects</h1>
-          <p className="mt-2 text-[var(--color-ink-muted)]">
+      <header className="mb-6 flex flex-col gap-4 animate-fade-up sm:mb-8 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="font-display text-2xl font-extrabold sm:text-3xl">Projects</h1>
+          <p className="mt-2 text-sm text-[var(--color-ink-muted)] sm:text-base">
             Saved work you can reopen, edit, and invoice.
           </p>
         </div>
-        <Button asChild>
+        <Button asChild className="w-full shrink-0 sm:w-auto">
           <Link to="/?new=1">
             <Plus />
             Add New Project
@@ -199,7 +199,7 @@ export default function ProjectsIndexPage() {
         <p className="mb-4 text-sm text-[#a33b2b]">{error}</p>
       ) : null}
 
-      <div className="mb-6 max-w-sm">
+      <div className="mb-6 w-full max-w-sm">
         <p className="field-label">Customer</p>
         <Select
           value={data.filters.customerId ?? "all"}
@@ -293,25 +293,27 @@ export default function ProjectsIndexPage() {
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="flex flex-wrap items-center justify-between gap-2">
+                <CardContent className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                   <p className="text-sm text-[var(--color-ink-muted)]">
                     {printCount} print{printCount === 1 ? "" : "s"} ·{" "}
                     {printMinutes} min · material{" "}
                     {formatMoney(materialCost, symbol)}
                   </p>
-                  <div className="flex gap-2">
-                    <Button asChild size="sm" variant="secondary">
+                  <div className="grid grid-cols-3 gap-2 sm:flex">
+                    <Button asChild size="sm" variant="secondary" className="w-full sm:w-auto">
                       <Link to={`/?projectId=${project.id}`}>Open</Link>
                     </Button>
-                    <Button asChild size="sm">
+                    <Button asChild size="sm" className="w-full sm:w-auto">
                       <Link to={`/projects/${project.id}/invoice`}>
-                        Download PDF
+                        <span className="sm:hidden">PDF</span>
+                        <span className="hidden sm:inline">Download PDF</span>
                       </Link>
                     </Button>
                     <Button
                       type="button"
                       size="sm"
                       variant="destructive"
+                      className="w-full sm:w-auto"
                       disabled={deletingId === project.id}
                       onClick={() =>
                         setPendingDelete({
@@ -321,7 +323,7 @@ export default function ProjectsIndexPage() {
                       }
                     >
                       <Trash2 />
-                      Delete
+                      <span className="sm:inline">Delete</span>
                     </Button>
                   </div>
                 </CardContent>

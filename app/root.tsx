@@ -5,9 +5,12 @@ import {
   Outlet,
   Scripts,
   ScrollRestoration,
+  useLoaderData,
 } from "react-router";
 
 import type { Route } from "./+types/root";
+import { AppShell } from "~/components/app-shell";
+import { getSession } from "~/lib/session.server";
 import "./app.css";
 
 export const links: Route.LinksFunction = () => [
@@ -22,6 +25,20 @@ export const links: Route.LinksFunction = () => [
     href: "https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@600;700;800&display=swap",
   },
 ];
+
+export async function loader({ request }: Route.LoaderArgs) {
+  const session = await getSession(request);
+  return {
+    user: session?.user
+      ? {
+          id: session.user.id,
+          name: session.user.name,
+          email: session.user.email,
+          image: session.user.image,
+        }
+      : null,
+  };
+}
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
@@ -42,7 +59,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  return <Outlet />;
+  const { user } = useLoaderData<typeof loader>();
+  return (
+    <AppShell user={user}>
+      <Outlet />
+    </AppShell>
+  );
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {

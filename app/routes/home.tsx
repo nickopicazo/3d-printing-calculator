@@ -1,5 +1,31 @@
+import { eq } from "drizzle-orm";
 import { useEffect, useId, useRef, useState } from "react";
+import { Link, useLoaderData } from "react-router";
 import type { Route } from "./+types/home";
+import { SaveQuoteDialog } from "~/components/save-quote-dialog";
+import { Button } from "~/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "~/components/ui/card";
+import { Input } from "~/components/ui/input";
+import { Label } from "~/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
+import { Separator } from "~/components/ui/separator";
+import { db } from "~/db/index.server";
+import { clients, filaments, projects } from "~/db/schema";
+import type { PlateImport } from "~/lib/gcode/loadFromArchive";
+import { minutesToHoursMinutes } from "~/lib/ocr/parseSlicerResult";
+import type { OcrProgress } from "~/lib/ocr/runOcr";
 import {
   calculateQuote,
   createEmptyFilament,
@@ -7,15 +33,14 @@ import {
   formatMoney,
   materialCostForLine,
   type FilamentLine,
-} from "../lib/pricing";
+} from "~/lib/pricing";
+import { getSession } from "~/lib/session.server";
 import {
   DEFAULT_SETTINGS,
   loadSettings,
   saveSettings,
   type AppSettings,
-} from "../lib/settings";
-import { minutesToHoursMinutes } from "../lib/ocr/parseSlicerResult";
-import type { OcrProgress } from "../lib/ocr/runOcr";
+} from "~/lib/settings";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -26,6 +51,86 @@ export function meta({}: Route.MetaArgs) {
         "Estimate 3D printing price from filament weight, print time, and your material rates. Upload a Bambu .gcode.3mf / G-code, a slicer screenshot, or enter values manually.",
     },
   ];
+}
+
+export async function loader({ request }: Route.LoaderArgs) {
+  const session = await getSession(request);
+  const empty = {
+    user: null as null | {
+      id: string;
+      name: string;
+      email: string;
+    },
+    inventory: [] as Array<{
+      id: string;
+      name: string;
+      type: string | null;
+      color: string | null;
+      pricePerKg: number;
+    }>,
+    clients: [] as Array<{
+      id: string;
+      name: string;
+      email: string | null;
+      phone: string | null;
+    }>,
+    projects: [] as Array<{ id: string; clientId: string; name: string }>,
+  };
+
+  if (!session?.user) return empty;
+
+  try {
+    const [inventory, clientRows, projectRows] = await Promise.all([
+      db
+        .select()
+        .from(filaments)
+        .where(eq(filaments.userId, session.user.id)),
+      db
+        .select()
+        .from(clients)
+        .where(eq(clients.userId, session.user.id)),
+      db
+        .select()
+        .from(projects)
+        .where(eq(projects.userId, session.user.id)),
+    ]);
+
+    return {
+      user: {
+        id: session.user.id,
+        name: session.user.name,
+        email: session.user.email,
+      },
+      inventory: inventory.map((f) => ({
+        id: f.id,
+        name: f.name,
+        type: f.type,
+        color: f.color,
+        pricePerKg: f.pricePerKg,
+      })),
+      clients: clientRows.map((c) => ({
+        id: c.id,
+        name: c.name,
+        email: c.email,
+        phone: c.phone,
+      })),
+      projects: projectRows.map((p) => ({
+        id: p.id,
+        clientId: p.clientId,
+        name: p.name,
+      })),
+    };
+  } catch (error) {
+    console.warn("Home loader DB query failed:", error);
+    return {
+      ...empty,
+      user: {
+        id: session.user.id,
+        name: session.user.name,
+        email: session.user.email,
+      },
+    };
+  }
 }
 
 type ImportStatus = {
@@ -45,6 +150,7 @@ function parseNumberInput(value: string): number {
 }
 
 export default function Home() {
+  const data = useLoaderData<typeof loader>();
   const fileInputId = useId();
   const gcodeInputId = useId();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -53,12 +159,18 @@ export default function Home() {
   const [hydrated, setHydrated] = useState(false);
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [saveOpen, setSaveOpen] = useState(false);
 
-  const [filaments, setFilaments] = useState<FilamentLine[]>([
+  const [filamentLines, setFilamentLines] = useState<FilamentLine[]>([
     createEmptyFilament(DEFAULT_SETTINGS.defaultFilamentPricePerKg),
   ]);
   const [hours, setHours] = useState(0);
   const [minutes, setMinutes] = useState(0);
+  const [plates, setPlates] = useState<PlateImport[]>([]);
+  const [metadataSnapshot, setMetadataSnapshot] = useState<Record<
+    string,
+    unknown
+  > | null>(null);
 
   const [importStatus, setImportStatus] = useState<ImportStatus>({
     running: false,
@@ -72,7 +184,7 @@ export default function Home() {
   useEffect(() => {
     const loaded = loadSettings();
     setSettings(loaded);
-    setFilaments([createEmptyFilament(loaded.defaultFilamentPricePerKg)]);
+    setFilamentLines([createEmptyFilament(loaded.defaultFilamentPricePerKg)]);
     setHydrated(true);
   }, []);
 
@@ -102,20 +214,20 @@ export default function Home() {
 
   const printMinutes = hours * 60 + minutes;
   const quote = calculateQuote({
-    filaments,
+    filaments: filamentLines,
     printMinutes,
     machineRatePerHour: settings.machineRatePerHour,
     markupPercent: settings.markupPercent,
   });
 
   function updateFilament(id: string, patch: Partial<FilamentLine>) {
-    setFilaments((rows) =>
+    setFilamentLines((rows) =>
       rows.map((row) => (row.id === id ? { ...row, ...patch } : row)),
     );
   }
 
   function addFilament() {
-    setFilaments((rows) => [
+    setFilamentLines((rows) => [
       ...rows,
       createEmptyFilament(
         settings.defaultFilamentPricePerKg,
@@ -125,7 +237,7 @@ export default function Home() {
   }
 
   function removeFilament(id: string) {
-    setFilaments((rows) => {
+    setFilamentLines((rows) => {
       if (rows.length <= 1) {
         return [createEmptyFilament(settings.defaultFilamentPricePerKg)];
       }
@@ -133,19 +245,47 @@ export default function Home() {
     });
   }
 
+  function applyInventory(lineId: string, inventoryId: string) {
+    if (inventoryId === "custom") {
+      updateFilament(lineId, { inventoryFilamentId: null });
+      return;
+    }
+    const inv = data.inventory.find((f) => f.id === inventoryId);
+    if (!inv) return;
+    updateFilament(lineId, {
+      inventoryFilamentId: inv.id,
+      pricePerKg: inv.pricePerKg,
+      label: inv.name,
+      type: inv.type,
+      color: inv.color,
+    });
+  }
+
   function applyImport(args: {
-    filaments: Array<{ label: string; grams: number }>;
+    filaments: Array<{
+      label: string;
+      grams: number;
+      slot?: number | null;
+      type?: string | null;
+      color?: string | null;
+    }>;
     totalMinutes: number | null;
     warnings: string[];
     source: string;
+    plates?: PlateImport[];
+    metadataSnapshot?: Record<string, unknown> | null;
   }) {
     if (args.filaments.length > 0) {
-      setFilaments(
+      setFilamentLines(
         args.filaments.map((line) => ({
           id: createFilamentId(),
           label: line.label,
           grams: line.grams,
           pricePerKg: settings.defaultFilamentPricePerKg,
+          inventoryFilamentId: null,
+          slot: line.slot ?? null,
+          type: line.type ?? null,
+          color: line.color ?? null,
         })),
       );
     }
@@ -155,6 +295,9 @@ export default function Home() {
       setHours(hm.hours);
       setMinutes(hm.minutes);
     }
+
+    setPlates(args.plates ?? []);
+    setMetadataSnapshot(args.metadataSnapshot ?? null);
 
     setImportStatus({
       running: false,
@@ -190,6 +333,8 @@ export default function Home() {
         totalMinutes: result.totalMinutes,
         warnings: result.warnings,
         source: file.name,
+        plates: [],
+        metadataSnapshot: { source: "ocr", fileName: file.name },
       });
     } catch (error) {
       setImportStatus({
@@ -230,10 +375,15 @@ export default function Home() {
         filaments: result.filaments.map((line) => ({
           label: line.label,
           grams: line.grams,
+          slot: line.slot,
+          type: line.type,
+          color: line.color,
         })),
         totalMinutes: result.totalMinutes,
         warnings: result.warnings,
         source: result.sourceName,
+        plates: result.plates,
+        metadataSnapshot: result.metadataSnapshot,
       });
     } catch (error) {
       setImportStatus({
@@ -263,6 +413,7 @@ export default function Home() {
   }
 
   const symbol = settings.currencySymbol;
+  const slicedPlates = plates.filter((p) => p.sliced);
 
   return (
     <main className="mx-auto min-h-screen max-w-3xl px-4 py-10 sm:px-6 sm:py-14">
@@ -280,31 +431,29 @@ export default function Home() {
         </p>
       </header>
 
-      <section className="animate-fade-up-delay mb-6 rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)]/90 p-5 shadow-[0_12px_40px_rgba(26,35,50,0.06)] backdrop-blur-sm sm:p-6">
-        <div className="flex flex-wrap items-start justify-between gap-3">
+      <Card className="animate-fade-up-delay mb-6">
+        <CardHeader className="flex-row flex-wrap items-start justify-between gap-3 space-y-0">
           <div>
-            <h2 className="font-display text-xl font-bold">Settings</h2>
-            <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
+            <CardTitle>Settings</CardTitle>
+            <CardDescription>
               {settings.currencyCode} ({symbol}) · machine{" "}
               {formatMoney(settings.machineRatePerHour, symbol)}/hr · markup{" "}
               {settings.markupPercent}%
-            </p>
+            </CardDescription>
           </div>
-          <button
+          <Button
             type="button"
-            className="btn btn-ghost"
+            variant="secondary"
             onClick={() => setSettingsOpen((open) => !open)}
           >
             {settingsOpen ? "Hide" : "Edit rates"}
-          </button>
-        </div>
-
-        {settingsOpen && (
-          <div className="mt-5 grid gap-4 sm:grid-cols-2">
-            <label>
-              <span className="field-label">Currency code</span>
-              <input
-                className="field-input"
+          </Button>
+        </CardHeader>
+        {settingsOpen ? (
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <Label>Currency code</Label>
+              <Input
                 value={settings.currencyCode}
                 onChange={(e) =>
                   setSettings((s) => ({
@@ -312,13 +461,11 @@ export default function Home() {
                     currencyCode: e.target.value.toUpperCase(),
                   }))
                 }
-                placeholder="PHP"
               />
-            </label>
-            <label>
-              <span className="field-label">Currency symbol</span>
-              <input
-                className="field-input"
+            </div>
+            <div>
+              <Label>Currency symbol</Label>
+              <Input
                 value={settings.currencySymbol}
                 onChange={(e) =>
                   setSettings((s) => ({
@@ -326,15 +473,12 @@ export default function Home() {
                     currencySymbol: e.target.value,
                   }))
                 }
-                placeholder="₱"
               />
-            </label>
-            <label>
-              <span className="field-label">
-                Machine rate ({symbol}/hour)
-              </span>
-              <input
-                className="field-input font-mono"
+            </div>
+            <div>
+              <Label>Machine rate ({symbol}/hour)</Label>
+              <Input
+                className="font-mono"
                 inputMode="decimal"
                 value={settings.machineRatePerHour}
                 onChange={(e) =>
@@ -344,11 +488,11 @@ export default function Home() {
                   }))
                 }
               />
-            </label>
-            <label>
-              <span className="field-label">Markup (%)</span>
-              <input
-                className="field-input font-mono"
+            </div>
+            <div>
+              <Label>Markup (%)</Label>
+              <Input
+                className="font-mono"
                 inputMode="decimal"
                 value={settings.markupPercent}
                 onChange={(e) =>
@@ -358,13 +502,11 @@ export default function Home() {
                   }))
                 }
               />
-            </label>
-            <label className="sm:col-span-2">
-              <span className="field-label">
-                Default filament price ({symbol}/kg)
-              </span>
-              <input
-                className="field-input font-mono"
+            </div>
+            <div className="sm:col-span-2">
+              <Label>Default filament price ({symbol}/kg)</Label>
+              <Input
+                className="font-mono"
                 inputMode="decimal"
                 value={settings.defaultFilamentPricePerKg}
                 onChange={(e) =>
@@ -374,20 +516,19 @@ export default function Home() {
                   }))
                 }
               />
-            </label>
-          </div>
-        )}
-      </section>
+            </div>
+          </CardContent>
+        ) : null}
+      </Card>
 
-      <section className="animate-fade-up-delay mb-6 rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)]/90 p-5 shadow-[0_12px_40px_rgba(26,35,50,0.06)] backdrop-blur-sm sm:p-6">
-        <div className="flex flex-wrap items-start justify-between gap-3">
+      <Card className="animate-fade-up-delay mb-6">
+        <CardHeader className="flex-row flex-wrap items-start justify-between gap-3 space-y-0">
           <div>
-            <h2 className="font-display text-xl font-bold">Import print data</h2>
-            <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
-              Prefer a Bambu <span className="font-mono">.gcode.3mf</span> for
-              exact grams and time (no rename needed). Screenshot OCR works as
-              a fallback — paste an image with ⌘V / Ctrl+V.
-            </p>
+            <CardTitle>Import print data</CardTitle>
+            <CardDescription>
+              Prefer a Bambu <span className="font-mono">.gcode.3mf</span>. Multi-plate
+              packages sum all sliced plates.
+            </CardDescription>
           </div>
           <div className="flex flex-wrap gap-2">
             <input
@@ -406,101 +547,171 @@ export default function Home() {
               className="sr-only"
               onChange={onFileChange}
             />
-            <button
+            <Button
               type="button"
-              className="btn btn-primary"
               disabled={importStatus.running}
               onClick={() => gcodeRef.current?.click()}
             >
               {importStatus.running && importStatus.kind === "gcode"
                 ? "Reading…"
                 : "Upload 3MF / G-code"}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              className="btn btn-ghost"
+              variant="secondary"
               disabled={importStatus.running}
               onClick={() => fileRef.current?.click()}
             >
               {importStatus.running && importStatus.kind === "ocr"
                 ? "Reading…"
                 : "Upload screenshot"}
-            </button>
+            </Button>
           </div>
-        </div>
-
-        {importStatus.running && (
-          <div className="mt-4 rounded-xl border border-[var(--color-line)] bg-[#f7fafb] px-4 py-3 text-sm">
-            <p className="animate-pulse-soft font-medium text-[var(--color-accent-deep)]">
-              {importStatus.progress?.status ?? "Working…"}
-            </p>
-            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--color-line)]">
-              <div
-                className="h-full rounded-full bg-[var(--color-accent)] transition-all duration-300"
-                style={{
-                  width: `${Math.round((importStatus.progress?.progress ?? 0) * 100)}%`,
-                }}
-              />
+        </CardHeader>
+        <CardContent>
+          {importStatus.running ? (
+            <div className="rounded-xl border border-[var(--color-line)] bg-[#f7fafb] px-4 py-3 text-sm">
+              <p className="animate-pulse-soft font-medium text-[var(--color-accent-deep)]">
+                {importStatus.progress?.status ?? "Working…"}
+              </p>
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--color-line)]">
+                <div
+                  className="h-full rounded-full bg-[var(--color-accent)] transition-all duration-300"
+                  style={{
+                    width: `${Math.round((importStatus.progress?.progress ?? 0) * 100)}%`,
+                  }}
+                />
+              </div>
             </div>
+          ) : null}
+
+          {importStatus.source && !importStatus.running && !importStatus.error ? (
+            <p className="text-sm text-[var(--color-ink-muted)]">
+              Loaded from{" "}
+              <span className="font-mono text-[var(--color-ink)]">
+                {importStatus.source}
+              </span>
+              {slicedPlates.length > 1
+                ? ` · ${slicedPlates.length} sliced plates`
+                : null}
+            </p>
+          ) : null}
+
+          {importStatus.error ? (
+            <p className="text-sm text-[#a33b2b]" role="alert">
+              {importStatus.error}
+            </p>
+          ) : null}
+
+          {importStatus.warnings.length > 0 && !importStatus.running ? (
+            <ul className="mt-3 space-y-1 text-sm text-[var(--color-warn)]">
+              {importStatus.warnings.map((warning) => (
+                <li key={warning}>{warning}</li>
+              ))}
+            </ul>
+          ) : null}
+
+          {plates.length > 0 ? (
+            <div className="mt-4 flex gap-3 overflow-x-auto pb-1">
+              {plates.map((plate) => (
+                <div
+                  key={plate.plateIndex}
+                  className="w-28 shrink-0 text-center"
+                >
+                  {plate.imageDataUrl ? (
+                    <img
+                      src={plate.imageDataUrl}
+                      alt={`Plate ${plate.plateIndex}`}
+                      className="aspect-square w-full rounded-lg border border-[var(--color-line)] bg-black object-cover"
+                    />
+                  ) : (
+                    <div className="flex aspect-square items-center justify-center rounded-lg border border-dashed border-[var(--color-line)] text-xs text-[var(--color-ink-muted)]">
+                      No img
+                    </div>
+                  )}
+                  <p className="mt-1 text-xs text-[var(--color-ink-muted)]">
+                    Plate {plate.plateIndex}
+                    {!plate.sliced ? " · unsliced" : ""}
+                  </p>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
+
+      <Card className="animate-fade-up-delay-2 mb-6">
+        <CardHeader className="flex-row flex-wrap items-center justify-between gap-3 space-y-0">
+          <div>
+            <CardTitle>Filaments</CardTitle>
+            <CardDescription>
+              Multi-color prints: one row per filament.
+              {data.user ? (
+                <>
+                  {" "}
+                  Pick from your{" "}
+                  <Link
+                    to="/filaments"
+                    className="text-[var(--color-accent-deep)] hover:underline"
+                  >
+                    inventory
+                  </Link>
+                  .
+                </>
+              ) : null}
+            </CardDescription>
           </div>
-        )}
-
-        {importStatus.source && !importStatus.running && !importStatus.error && (
-          <p className="mt-4 text-sm text-[var(--color-ink-muted)]">
-            Loaded from{" "}
-            <span className="font-mono text-[var(--color-ink)]">
-              {importStatus.source}
-            </span>
-          </p>
-        )}
-
-        {importStatus.error && (
-          <p className="mt-4 text-sm text-[#a33b2b]" role="alert">
-            {importStatus.error}
-          </p>
-        )}
-
-        {importStatus.warnings.length > 0 && !importStatus.running && (
-          <ul className="mt-4 space-y-1 text-sm text-[var(--color-warn)]">
-            {importStatus.warnings.map((warning) => (
-              <li key={warning}>{warning}</li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section className="animate-fade-up-delay-2 mb-6 rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)]/90 p-5 shadow-[0_12px_40px_rgba(26,35,50,0.06)] backdrop-blur-sm sm:p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="font-display text-xl font-bold">Filaments</h2>
-          <button type="button" className="btn btn-ghost" onClick={addFilament}>
+          <Button type="button" variant="secondary" onClick={addFilament}>
             Add filament
-          </button>
-        </div>
-        <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
-          Multi-color prints: one row per filament with its own price per kg.
-        </p>
-
-        <div className="mt-5 space-y-4">
-          {filaments.map((line, index) => (
+          </Button>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {filamentLines.map((line, index) => (
             <div
               key={line.id}
               className="grid gap-3 rounded-xl border border-[var(--color-line)] bg-[#fbfcfd] p-4 sm:grid-cols-[1.2fr_1fr_1fr_auto]"
             >
-              <label>
-                <span className="field-label">Label</span>
-                <input
-                  className="field-input"
+              <div className="space-y-3 sm:col-span-4">
+                {data.inventory.length > 0 ? (
+                  <div>
+                    <Label>From inventory</Label>
+                    <Select
+                      value={line.inventoryFilamentId ?? "custom"}
+                      onValueChange={(v) => applyInventory(line.id, v)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Custom / default price" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="custom">
+                          Custom / default price
+                        </SelectItem>
+                        {data.inventory.map((inv) => (
+                          <SelectItem key={inv.id} value={inv.id}>
+                            {inv.name}
+                            {inv.type ? ` · ${inv.type}` : ""} ·{" "}
+                            {formatMoney(inv.pricePerKg, symbol)}/kg
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                ) : null}
+              </div>
+              <div>
+                <Label>Label</Label>
+                <Input
                   value={line.label}
                   onChange={(e) =>
                     updateFilament(line.id, { label: e.target.value })
                   }
                   placeholder={`Filament ${index + 1}`}
                 />
-              </label>
-              <label>
-                <span className="field-label">Weight (g)</span>
-                <input
-                  className="field-input font-mono"
+              </div>
+              <div>
+                <Label>Weight (g)</Label>
+                <Input
+                  className="font-mono"
                   inputMode="decimal"
                   value={line.grams || ""}
                   onChange={(e) =>
@@ -510,116 +721,151 @@ export default function Home() {
                   }
                   placeholder="0"
                 />
-              </label>
-              <label>
-                <span className="field-label">Price ({symbol}/kg)</span>
-                <input
-                  className="field-input font-mono"
+              </div>
+              <div>
+                <Label>Price ({symbol}/kg)</Label>
+                <Input
+                  className="font-mono"
                   inputMode="decimal"
                   value={line.pricePerKg || ""}
                   onChange={(e) =>
                     updateFilament(line.id, {
                       pricePerKg: parseNumberInput(e.target.value),
+                      inventoryFilamentId: null,
                     })
                   }
                   placeholder="0"
                 />
-              </label>
+              </div>
               <div className="flex items-end justify-between gap-2 sm:flex-col sm:items-stretch">
                 <p className="font-mono text-sm text-[var(--color-ink-muted)] sm:text-right">
                   {formatMoney(materialCostForLine(line), symbol)}
                 </p>
-                <button
+                <Button
                   type="button"
-                  className="btn btn-danger"
+                  variant="destructive"
                   onClick={() => removeFilament(line.id)}
                   aria-label={`Remove ${line.label}`}
                 >
                   Remove
-                </button>
+                </Button>
               </div>
             </div>
           ))}
-        </div>
-      </section>
+        </CardContent>
+      </Card>
 
-      <section className="mb-6 rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel)]/90 p-5 shadow-[0_12px_40px_rgba(26,35,50,0.06)] backdrop-blur-sm sm:p-6">
-        <h2 className="font-display text-xl font-bold">Print time</h2>
-        <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
-          Uses total time from the slicer when available.
-        </p>
-        <div className="mt-4 grid max-w-md grid-cols-2 gap-3">
-          <label>
-            <span className="field-label">Hours</span>
-            <input
-              className="field-input font-mono"
-              inputMode="numeric"
-              value={hours || ""}
-              onChange={(e) => setHours(Math.max(0, parseNumberInput(e.target.value)))}
-              placeholder="0"
-            />
-          </label>
-          <label>
-            <span className="field-label">Minutes</span>
-            <input
-              className="field-input font-mono"
-              inputMode="numeric"
-              value={minutes || ""}
-              onChange={(e) => {
-                const value = Math.max(0, parseNumberInput(e.target.value));
-                setMinutes(Math.min(59, Math.round(value)));
-              }}
-              placeholder="0"
-            />
-          </label>
-        </div>
-      </section>
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Print time</CardTitle>
+          <CardDescription>
+            Uses total time from the slicer when available (summed across plates).
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid max-w-md grid-cols-2 gap-3">
+            <div>
+              <Label>Hours</Label>
+              <Input
+                className="font-mono"
+                inputMode="numeric"
+                value={hours || ""}
+                onChange={(e) =>
+                  setHours(Math.max(0, parseNumberInput(e.target.value)))
+                }
+                placeholder="0"
+              />
+            </div>
+            <div>
+              <Label>Minutes</Label>
+              <Input
+                className="font-mono"
+                inputMode="numeric"
+                value={minutes || ""}
+                onChange={(e) => {
+                  const value = Math.max(0, parseNumberInput(e.target.value));
+                  setMinutes(Math.min(59, Math.round(value)));
+                }}
+                placeholder="0"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-      <section className="rounded-2xl border border-[var(--color-accent)]/25 bg-[linear-gradient(160deg,#ffffff_0%,#eef8f6_100%)] p-5 shadow-[0_16px_48px_rgba(13,143,124,0.12)] sm:p-6">
-        <h2 className="font-display text-xl font-bold">Quote</h2>
-        <dl className="mt-4 space-y-2 text-sm sm:text-base">
-          <div className="flex justify-between gap-4">
-            <dt className="text-[var(--color-ink-muted)]">Material</dt>
-            <dd className="font-mono font-medium">
-              {formatMoney(quote.materialCost, symbol)}
-            </dd>
-          </div>
-          <div className="flex justify-between gap-4">
-            <dt className="text-[var(--color-ink-muted)]">
-              Machine ({quote.printHours.toFixed(2)} hr ×{" "}
-              {formatMoney(settings.machineRatePerHour, symbol)})
-            </dt>
-            <dd className="font-mono font-medium">
-              {formatMoney(quote.machineCost, symbol)}
-            </dd>
-          </div>
-          <div className="flex justify-between gap-4 border-t border-[var(--color-line)] pt-2">
-            <dt className="text-[var(--color-ink-muted)]">Subtotal</dt>
-            <dd className="font-mono font-medium">
-              {formatMoney(quote.subtotal, symbol)}
-            </dd>
-          </div>
-          <div className="flex justify-between gap-4">
-            <dt className="text-[var(--color-ink-muted)]">
-              Markup ({settings.markupPercent}%)
-            </dt>
-            <dd className="font-mono font-medium">
-              {formatMoney(quote.markupAmount, symbol)}
-            </dd>
-          </div>
-          <div className="flex justify-between gap-4 border-t border-[var(--color-accent)]/30 pt-3">
-            <dt className="font-display text-lg font-bold">Total</dt>
-            <dd className="font-display text-2xl font-extrabold text-[var(--color-accent-deep)] sm:text-3xl">
-              {formatMoney(quote.total, symbol)}
-            </dd>
-          </div>
-        </dl>
-      </section>
+      <Card className="border-[var(--color-accent)]/25 bg-[linear-gradient(160deg,#ffffff_0%,#eef8f6_100%)] shadow-[0_16px_48px_rgba(13,143,124,0.12)]">
+        <CardHeader className="flex-row flex-wrap items-start justify-between gap-3 space-y-0">
+          <CardTitle>Quote</CardTitle>
+          <Button type="button" onClick={() => setSaveOpen(true)}>
+            Save quote
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <dl className="space-y-2 text-sm sm:text-base">
+            <div className="flex justify-between gap-4">
+              <dt className="text-[var(--color-ink-muted)]">Material</dt>
+              <dd className="font-mono font-medium">
+                {formatMoney(quote.materialCost, symbol)}
+              </dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-[var(--color-ink-muted)]">
+                Machine ({quote.printHours.toFixed(2)} hr ×{" "}
+                {formatMoney(settings.machineRatePerHour, symbol)})
+              </dt>
+              <dd className="font-mono font-medium">
+                {formatMoney(quote.machineCost, symbol)}
+              </dd>
+            </div>
+            <div className="flex justify-between gap-4 border-t border-[var(--color-line)] pt-2">
+              <dt className="text-[var(--color-ink-muted)]">Subtotal</dt>
+              <dd className="font-mono font-medium">
+                {formatMoney(quote.subtotal, symbol)}
+              </dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-[var(--color-ink-muted)]">
+                Markup ({settings.markupPercent}%)
+              </dt>
+              <dd className="font-mono font-medium">
+                {formatMoney(quote.markupAmount, symbol)}
+              </dd>
+            </div>
+            <Separator className="my-2 bg-[var(--color-accent)]/30" />
+            <div className="flex justify-between gap-4">
+              <dt className="font-display text-lg font-bold">Total</dt>
+              <dd className="font-display text-2xl font-extrabold text-[var(--color-accent-deep)] sm:text-3xl">
+                {formatMoney(quote.total, symbol)}
+              </dd>
+            </div>
+          </dl>
+        </CardContent>
+      </Card>
 
       <p className="mt-8 text-center text-xs text-[var(--color-ink-muted)]">
-        Settings stay in this browser. OCR runs locally — nothing is uploaded to
-        a server.
+        Rates stay in this browser. OCR runs locally. Sign in to save quotes and
+        filament inventory.
       </p>
+
+      <SaveQuoteDialog
+        open={saveOpen}
+        onOpenChange={setSaveOpen}
+        userLoggedIn={Boolean(data.user)}
+        clients={data.clients}
+        projects={data.projects}
+        titleDefault={
+          importStatus.source
+            ? importStatus.source.split("/").pop()?.replace(/\.(gcode\.)?3mf$/i, "") ||
+              "New quote"
+            : "New quote"
+        }
+        settings={settings}
+        filaments={filamentLines}
+        printMinutes={printMinutes}
+        sourceName={importStatus.source}
+        plates={plates}
+        metadataSnapshot={metadataSnapshot}
+      />
     </main>
   );
 }

@@ -91,7 +91,7 @@ export default function ProjectsIndexPage() {
   const symbol = DEFAULT_SETTINGS.currencySymbol;
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
+    <main className="page-shell">
       <header className="mb-8 animate-fade-up">
         <h1 className="font-display text-3xl font-extrabold">Projects</h1>
         <p className="mt-2 text-[var(--color-ink-muted)]">
@@ -126,9 +126,9 @@ export default function ProjectsIndexPage() {
         </Select>
       </div>
 
-      <div className="space-y-3">
+      <div className="grid gap-4 sm:grid-cols-2">
         {data.projects.length === 0 ? (
-          <p className="text-sm text-[var(--color-ink-muted)]">
+          <p className="text-sm text-[var(--color-ink-muted)] sm:col-span-2">
             No projects yet. Open the{" "}
             <Link
               to="/"
@@ -147,7 +147,7 @@ export default function ProjectsIndexPage() {
             ({ project, customerName, total, materialCost, printMinutes, printCount }) => (
               <Card
                 key={project.id}
-                className="transition-shadow hover:shadow-[0_16px_40px_rgba(26,35,50,0.1)]"
+                className="transition-shadow hover:shadow-[0_16px_40px_rgba(22,22,26,0.08)]"
               >
                 <CardHeader className="pb-2">
                   <div className="flex items-start justify-between gap-3">

@@ -105,7 +105,8 @@ export default function CustomersPage() {
   const actionData = useActionData<typeof action>();
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
+    <main className="page-shell">
+      <div className="mx-auto max-w-5xl">
       <header className="mb-8 animate-fade-up">
         <h1 className="font-display text-3xl font-extrabold">Customers</h1>
         <p className="mt-2 text-[var(--color-ink-muted)]">
@@ -217,6 +218,7 @@ export default function CustomersPage() {
             </Card>
           ))
         )}
+      </div>
       </div>
     </main>
   );

@@ -1,17 +1,19 @@
 @import "tailwindcss";
 
 @theme {
-  --font-display: "Syne", ui-sans-serif, system-ui, sans-serif;
-  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
 
-  --color-ink: #1a2332;
-  --color-ink-muted: #5c6b7a;
-  --color-paper: #f3f6f8;
+  --color-ink: #16161a;
+  --color-ink-muted: #6b6b76;
+  --color-paper: #f0f0f2;
   --color-panel: #ffffff;
-  --color-line: #d5dee6;
-  --color-accent: #0d8f7c;
-  --color-accent-deep: #076b5d;
+  --color-line: #e4e4e8;
+  --color-accent: #7c5cff;
+  --color-accent-deep: #5b45e0;
+  --color-lime: #c6f04d;
+  --color-charcoal: #1e1e22;
   --color-warm: #c45c26;
   --color-warn: #9a6700;
 }
@@ -21,26 +23,8 @@ body {
   min-height: 100%;
   color: var(--color-ink);
   font-family: var(--font-sans);
-  background:
-    radial-gradient(ellipse 80% 50% at 10% -10%, #c8e8e2 0%, transparent 55%),
-    radial-gradient(ellipse 70% 45% at 100% 0%, #e8d5c4 0%, transparent 50%),
-    linear-gradient(180deg, #eef3f6 0%, #e4ebf0 100%);
+  background: var(--color-paper);
   background-attachment: fixed;
-}
-
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0.35;
-  background-image: radial-gradient(
-    circle at 1px 1px,
-    rgba(26, 35, 50, 0.08) 1px,
-    transparent 0
-  );
-  background-size: 22px 22px;
-  z-index: 0;
 }
 
 #root,
@@ -55,6 +39,55 @@ body > div {
 
 .font-mono {
   font-family: var(--font-mono);
+}
+
+.page-shell {
+  width: 100%;
+  max-width: 1400px;
+  margin-inline: auto;
+  padding-inline: 1.25rem;
+  padding-block: 1.75rem;
+}
+
+@media (min-width: 640px) {
+  .page-shell {
+    padding-inline: 1.75rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .page-shell {
+    padding-inline: 2.5rem;
+    padding-block: 2rem;
+  }
+}
+
+.dash-card {
+  border-radius: 1.5rem;
+  background: var(--color-panel);
+  border: 1px solid rgba(228, 228, 232, 0.9);
+  box-shadow: 0 8px 28px rgba(22, 22, 26, 0.04);
+  padding: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .dash-card {
+    padding: 1.5rem;
+  }
+}
+
+.dash-card-dark {
+  border-radius: 1.5rem;
+  background: var(--color-charcoal);
+  color: #fff;
+  box-shadow: 0 12px 36px rgba(22, 22, 26, 0.18);
+  padding: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .dash-card-dark {
+    padding: 1.5rem;
+  }
 }
 
 @keyframes fade-up {
@@ -97,8 +130,8 @@ body > div {
 .field-input {
   width: 100%;
   border: 1px solid var(--color-line);
-  background: #fbfcfd;
-  border-radius: 0.5rem;
+  background: #fafafa;
+  border-radius: 0.875rem;
   padding: 0.55rem 0.75rem;
   font-size: 0.95rem;
   color: var(--color-ink);
@@ -110,7 +143,7 @@ body > div {
 
 .field-input:focus {
   border-color: var(--color-accent);
-  box-shadow: 0 0 0 3px rgba(13, 143, 124, 0.18);
+  box-shadow: 0 0 0 3px rgba(124, 92, 255, 0.18);
 }
 
 .field-label {
@@ -128,8 +161,8 @@ body > div {
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  border-radius: 0.55rem;
-  padding: 0.6rem 1rem;
+  border-radius: 9999px;
+  padding: 0.6rem 1.15rem;
   font-weight: 600;
   font-size: 0.9rem;
   transition:
@@ -163,7 +196,7 @@ body > div {
 }
 
 .btn-ghost:hover:not(:disabled) {
-  background: rgba(26, 35, 50, 0.04);
+  background: rgba(22, 22, 26, 0.04);
   color: var(--color-ink);
 }
 
@@ -178,11 +211,7 @@ body > div {
 }
 
 @media print {
-  body::before {
-    display: none !important;
-  }
   header {
     display: none !important;
   }
 }
-

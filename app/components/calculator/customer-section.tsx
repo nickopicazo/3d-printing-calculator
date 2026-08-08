@@ -25,7 +25,7 @@ export function CustomerSection({
   const options = saved.map((c) => ({ value: c.id, label: c.name }));
 
   return (
-    <div className="space-y-3 rounded-xl border border-[var(--color-line)] bg-[var(--color-panel)] p-4 sm:p-5">
+    <div className="dash-card space-y-3">
       <div className="flex items-center justify-between gap-2">
         <h3 className="font-display text-lg font-bold">Customer</h3>
         {loggedIn && onSave ? (

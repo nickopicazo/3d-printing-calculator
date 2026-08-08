@@ -55,7 +55,7 @@ export function PrintEditor({
   }
 
   return (
-    <div className="space-y-4 rounded-xl border border-[var(--color-line)] bg-[var(--color-panel)] p-4 sm:p-5">
+    <div className="dash-card space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1.5">
           <Label htmlFor={`part-${print.id}`}>Part / file name</Label>

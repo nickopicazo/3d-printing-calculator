@@ -26,18 +26,18 @@ export function AdvancedSettingsPanel({ settings, onChange, showSla }: Props) {
   }
 
   return (
-    <Collapsible className="rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)]">
+    <Collapsible className="dash-card !p-0 overflow-hidden">
       <CollapsibleTrigger asChild>
         <Button
           type="button"
           variant="ghost"
-          className="flex w-full items-center justify-between rounded-lg px-4 py-3 font-semibold"
+          className="flex w-full items-center justify-between rounded-none px-5 py-4 font-semibold"
         >
           Advanced settings
           <ChevronDown className="size-4" />
         </Button>
       </CollapsibleTrigger>
-      <CollapsibleContent className="space-y-4 border-t border-[var(--color-line)] px-4 py-4">
+      <CollapsibleContent className="space-y-4 border-t border-[var(--color-line)] px-5 py-4">
         <p className="text-sm text-[var(--color-ink-muted)]">
           Electricity, labor rate, failure uplift, and depreciation helpers.
         </p>

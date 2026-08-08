@@ -478,17 +478,55 @@ export default function Home() {
     }
   }
 
+  const firstName = data.user?.name?.split(" ")[0] ?? "there";
+
   return (
-    <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 animate-fade-up">
-      <div className="mb-8">
-        <h1 className="font-display text-3xl font-extrabold tracking-tight sm:text-4xl">
-          3D Printing Calculator
-        </h1>
+    <main className="page-shell animate-fade-up">
+      <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="font-display text-3xl font-extrabold tracking-tight sm:text-4xl">
+            Welcome {firstName}
+          </h1>
+          <p className="mt-1.5 text-sm text-[var(--color-ink-muted)]">
+            Calculator <span className="mx-1 opacity-40">›</span> Estimate print
+            costs
+          </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {loggedIn && project.id ? (
+            <Button asChild>
+              <Link to={`/projects/${project.id}/invoice`}>
+                <Printer />
+                Export PDF
+              </Link>
+            </Button>
+          ) : (
+            <Button type="button" variant="secondary" onClick={() => window.print()}>
+              <Printer />
+              Export PDF
+            </Button>
+          )}
+          {loggedIn ? (
+            <Button
+              type="button"
+              variant="outline"
+              disabled={busy}
+              onClick={() => void saveProject()}
+            >
+              <Save />
+              Save project
+            </Button>
+          ) : (
+            <Button asChild variant="outline">
+              <Link to="/login">Sign in to save</Link>
+            </Button>
+          )}
+        </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
         <div className="space-y-5">
-          <div className="space-y-3 rounded-xl border border-[var(--color-line)] bg-[var(--color-panel)] p-4 sm:p-5">
+          <div className="dash-card space-y-4">
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <Label htmlFor="project-name">Project name</Label>
@@ -629,14 +667,15 @@ export default function Home() {
           />
         </div>
 
-        <aside className="space-y-4 lg:sticky lg:top-20 lg:self-start">
+        <aside className="space-y-4 xl:sticky xl:top-24 xl:self-start">
           <CostBreakdown
             breakdown={projectCalc}
             currencySymbol={settings.currencySymbol}
+            variant="dark"
             title={
               project.prints.length > 1
                 ? `Project total (${project.prints.length} prints)`
-                : "Cost breakdown"
+                : "Estimated total"
             }
           />
           {project.prints.length > 1
@@ -650,50 +689,27 @@ export default function Home() {
               ))
             : null}
 
-          <div className="flex flex-col gap-2">
-            {loggedIn && project.id ? (
-              <Button asChild>
-                <Link to={`/projects/${project.id}/invoice`}>
-                  <Printer />
-                  Print / Download PDF
-                </Link>
-              </Button>
-            ) : (
-              <Button type="button" variant="secondary" onClick={() => window.print()}>
-                <Printer />
-                Print / Download PDF
-              </Button>
-            )}
-            {loggedIn ? (
-              <Button type="button" disabled={busy} onClick={() => void saveProject()}>
-                <Save />
-                Save project
-              </Button>
-            ) : (
-              <Button asChild>
-                <Link to="/login">Sign in to save projects</Link>
-              </Button>
-            )}
-          </div>
-
           {message ? (
-            <p className="text-sm text-[var(--color-accent-deep)]">{message}</p>
+            <p className="text-sm font-medium text-[var(--color-accent-deep)]">
+              {message}
+            </p>
           ) : null}
           {error ? (
             <p className="text-sm text-[#a33b2b]">{error}</p>
           ) : null}
 
           {loggedIn && data.projects.length > 0 ? (
-            <div className="rounded-lg border border-[var(--color-line)] p-3 text-sm">
-              <p className="mb-2 font-semibold">Your projects</p>
-              <ul className="space-y-1">
+            <div className="dash-card text-sm">
+              <p className="mb-3 font-display text-sm font-bold">Recent projects</p>
+              <ul className="space-y-2">
                 {data.projects.slice(0, 8).map((p) => (
                   <li key={p.id}>
                     <Link
-                      className="text-[var(--color-accent-deep)] underline-offset-2 hover:underline"
+                      className="flex items-center justify-between gap-2 rounded-xl px-2 py-1.5 transition-colors hover:bg-[var(--color-paper)]"
                       to={`/?projectId=${p.id}`}
                     >
-                      {p.name}
+                      <span className="truncate font-medium">{p.name}</span>
+                      <span className="text-xs text-[var(--color-ink-muted)]">Open</span>
                     </Link>
                   </li>
                 ))}

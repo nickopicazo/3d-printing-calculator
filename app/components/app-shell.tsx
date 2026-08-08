@@ -11,8 +11,13 @@ export type NavUser = {
   image?: string | null;
 } | null;
 
-const links = [
-  { to: "/", label: "Calculator" },
+const links: Array<{
+  to: string;
+  label: string;
+  auth?: boolean;
+  match?: string;
+}> = [
+  { to: "/?new=1", label: "Calculator", match: "/" },
   { to: "/projects", label: "Projects", auth: true },
   { to: "/materials", label: "Materials", auth: true },
   { to: "/customers", label: "Customers", auth: true },
@@ -51,10 +56,11 @@ export function AppShell({
 
   const visible = links.filter((l) => !l.auth || user);
 
-  function isActive(to: string) {
+  function isActive(to: string, match?: string) {
+    const path = match ?? to;
     return (
-      location.pathname === to ||
-      (to !== "/" && location.pathname.startsWith(to))
+      location.pathname === path ||
+      (path !== "/" && location.pathname.startsWith(path))
     );
   }
 
@@ -79,7 +85,7 @@ export function AppShell({
                     to={link.to}
                     className={cn(
                       "rounded-full px-4 py-2 text-sm font-semibold transition-colors",
-                      isActive(link.to)
+                      isActive(link.to, link.match)
                         ? "bg-[var(--color-paper)] text-[var(--color-ink)] shadow-sm"
                         : "text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]",
                     )}
@@ -154,7 +160,7 @@ export function AppShell({
                   onClick={() => setOpen(false)}
                   className={cn(
                     "rounded-full px-3 py-2 text-sm font-semibold",
-                    isActive(link.to)
+                    isActive(link.to, link.match)
                       ? "bg-white text-[var(--color-ink)]"
                       : "text-[var(--color-ink)]",
                   )}

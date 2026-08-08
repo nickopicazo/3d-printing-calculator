@@ -38,7 +38,10 @@ import { customers, materials, projects } from "~/db/schema";
 import {
   emptyPrint,
   emptyProject,
+  findDuplicatePrint,
   nextPrintName,
+  normalizeSourceName,
+  printContentFingerprint,
   printDraftMinutes,
   type InventoryMaterial,
   type PrintDraft,
@@ -465,15 +468,64 @@ export default function Home() {
       const current = project.prints.find((p) => p.id === printId);
       if (!current) throw new Error("Print not found.");
 
+      const skipped: string[] = [];
+      const acceptedFingerprints = new Set<string>();
+      const acceptedSources = new Set<string>();
+
+      function markAccepted(print: PrintDraft) {
+        acceptedFingerprints.add(printContentFingerprint(print));
+        const src = normalizeSourceName(print.sourceName);
+        if (src) acceptedSources.add(src);
+      }
+
+      function isDuplicateOf(
+        candidate: PrintDraft,
+        prints: PrintDraft[],
+        excludeId?: string,
+      ): PrintDraft | "batch" | null {
+        const src = normalizeSourceName(candidate.sourceName);
+        if (src && acceptedSources.has(src)) return "batch";
+        if (acceptedFingerprints.has(printContentFingerprint(candidate))) {
+          return "batch";
+        }
+        return findDuplicatePrint(prints, candidate, excludeId);
+      }
+
+      function skipLabel(fileName: string, dup: PrintDraft | "batch") {
+        if (dup === "batch") {
+          return `${fileName} (already in this upload)`;
+        }
+        const label = dup.name.trim() || "another print";
+        return `${fileName} → ${label}`;
+      }
+
       const [first, ...rest] = files;
-      const updatedCurrent = await applyFileToPrint(first!, current);
+      let updatedCurrent: PrintDraft | null = null;
+      let workingPrints = project.prints;
+
+      if (first) {
+        const imported = await applyFileToPrint(first, current);
+        const dup = isDuplicateOf(imported, workingPrints, printId);
+        if (dup) {
+          skipped.push(skipLabel(first.name, dup));
+          if (files.length === 1 && dup !== "batch") {
+            setActivePrintId(dup.id);
+            setWarning(
+              `Already imported as “${dup.name.trim() || "another print"}”. Skipped.`,
+            );
+            return;
+          }
+        } else {
+          updatedCurrent = imported;
+          markAccepted(imported);
+          workingPrints = workingPrints.map((p) =>
+            p.id === printId ? imported : p,
+          );
+        }
+      }
 
       const extras: PrintDraft[] = [];
-      let nameSeed = [
-        ...project.prints.map((p) =>
-          p.id === printId ? updatedCurrent : p,
-        ),
-      ];
+      let nameSeed = workingPrints;
       for (const file of rest) {
         const id = createId("print");
         const name = nextPrintName(nameSeed);
@@ -483,21 +535,45 @@ export default function Home() {
           name,
         };
         const imported = await applyFileToPrint(file, blank);
+        const dup = isDuplicateOf(imported, workingPrints);
+        if (dup) {
+          skipped.push(skipLabel(file.name, dup));
+          continue;
+        }
         extras.push(imported);
+        markAccepted(imported);
         nameSeed = [...nameSeed, imported];
+        workingPrints = [...workingPrints, imported];
       }
 
-      setProject((prev) => ({
-        ...prev,
-        prints: [
-          ...prev.prints.map((p) => (p.id === printId ? updatedCurrent : p)),
-          ...extras,
-        ],
-      }));
-      setActivePrintId(extras.at(-1)?.id ?? printId);
-      if (files.length > 1) {
+      if (updatedCurrent || extras.length > 0) {
+        setProject((prev) => ({
+          ...prev,
+          prints: [
+            ...(updatedCurrent
+              ? prev.prints.map((p) =>
+                  p.id === printId ? updatedCurrent! : p,
+                )
+              : prev.prints),
+            ...extras,
+          ],
+        }));
+        setActivePrintId(extras.at(-1)?.id ?? printId);
+      }
+
+      const importedCount =
+        (updatedCurrent ? 1 : 0) + extras.length;
+      if (skipped.length > 0 && importedCount > 0) {
         setWarning(
-          `Imported ${files.length} files as ${files.length} prints.`,
+          `Imported ${importedCount}. Skipped ${skipped.length} duplicate${skipped.length === 1 ? "" : "s"}: ${skipped.join("; ")}.`,
+        );
+      } else if (skipped.length > 0) {
+        setWarning(
+          `Skipped ${skipped.length} duplicate${skipped.length === 1 ? "" : "s"}: ${skipped.join("; ")}.`,
+        );
+      } else if (files.length > 1) {
+        setWarning(
+          `Imported ${importedCount} file${importedCount === 1 ? "" : "s"} as ${importedCount} print${importedCount === 1 ? "" : "s"}.`,
         );
       }
     } catch (e) {

@@ -12,6 +12,7 @@ import {
 import { dataUrlToBuffer } from "~/lib/calculator-types";
 import {
   calculatePrint,
+  withFixedServiceFee,
   type MaterialLine,
   type Technology,
 } from "~/lib/pricing";
@@ -268,7 +269,7 @@ export async function action({ request }: Route.ActionArgs) {
       color: m.color,
     }));
 
-    const breakdown = calculatePrint({
+    let breakdown = calculatePrint({
       technology: p.technology === "sla" ? "sla" : "fdm",
       materials,
       printMinutes: p.printMinutes,
@@ -277,6 +278,7 @@ export async function action({ request }: Route.ActionArgs) {
       packagingCost: p.packagingCost,
       settings,
     });
+    if (i === 0) breakdown = withFixedServiceFee(breakdown, settings);
 
     await db.insert(prints).values({
       id: printId,

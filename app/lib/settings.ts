@@ -1,9 +1,13 @@
+export type ServiceFeeMode = "percent" | "fixed";
+
 export type AppSettings = {
   currencyCode: string;
   /** Derived from currencyCode via Intl; kept for display convenience. */
   currencySymbol: string;
   machineRatePerHour: number;
-  markupPercent: number;
+  /** percent = % of landed+failure; fixed = flat amount once per project */
+  serviceFeeMode: ServiceFeeMode;
+  serviceFeeValue: number;
   vatRate: number;
   laborRatePerHour: number;
   powerWatts: number;
@@ -103,22 +107,24 @@ export function listCurrencies(): CurrencyOption[] {
 export const DEFAULT_SETTINGS: AppSettings = {
   currencyCode: "PHP",
   currencySymbol: currencySymbolForCode("PHP"),
-  machineRatePerHour: 50,
-  markupPercent: 20,
+  machineRatePerHour: 0,
+  serviceFeeMode: "percent",
+  serviceFeeValue: 0,
   vatRate: 0,
   laborRatePerHour: 0,
   powerWatts: 0,
   electricityPerKwh: 0,
   failurePercent: 0,
   printerPurchasePrice: 0,
-  printerLifespanHours: 5000,
+  printerLifespanHours: 0,
   slaConsumablesPerPrint: 0,
   slaSupportWastePercent: 0,
   defaultFilamentPricePerKg: 650,
   defaultResinPricePerLitre: 2500,
 };
 
-const STORAGE_KEY = "3d-cost-estimator:settings";
+/** Bump when defaults change so stale localStorage cannot revive old rates. */
+const STORAGE_KEY = "printcost:settings:v4";
 
 function isFiniteNumber(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value);
@@ -138,7 +144,19 @@ export function normalizeSettings(
   const merged = { ...DEFAULT_SETTINGS, ...(partial ?? {}) };
   const legacy = partial as Partial<AppSettings> & {
     defaultFilamentPricePerKg?: number;
+    markupPercent?: number;
   };
+
+  const legacyMarkup =
+    legacy.markupPercent != null &&
+    legacy.serviceFeeValue == null &&
+    Number.isFinite(legacy.markupPercent)
+      ? Number(legacy.markupPercent)
+      : null;
+
+  const modeRaw = String(merged.serviceFeeMode ?? "percent").toLowerCase();
+  const serviceFeeMode: ServiceFeeMode =
+    modeRaw === "fixed" ? "fixed" : "percent";
 
   return {
     currencyCode: (merged.currencyCode || DEFAULT_SETTINGS.currencyCode)
@@ -155,7 +173,11 @@ export function normalizeSettings(
       merged.machineRatePerHour,
       DEFAULT_SETTINGS.machineRatePerHour,
     ),
-    markupPercent: num(merged.markupPercent, DEFAULT_SETTINGS.markupPercent),
+    serviceFeeMode,
+    serviceFeeValue: num(
+      legacyMarkup ?? merged.serviceFeeValue,
+      DEFAULT_SETTINGS.serviceFeeValue,
+    ),
     vatRate: num(merged.vatRate, DEFAULT_SETTINGS.vatRate),
     laborRatePerHour: num(
       merged.laborRatePerHour,
@@ -174,7 +196,6 @@ export function normalizeSettings(
     printerLifespanHours: num(
       merged.printerLifespanHours,
       DEFAULT_SETTINGS.printerLifespanHours,
-      1,
     ),
     slaConsumablesPerPrint: num(
       merged.slaConsumablesPerPrint,

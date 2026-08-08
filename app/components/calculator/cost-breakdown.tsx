@@ -84,7 +84,9 @@ export function CostBreakdown({
         {breakdown.failureUplift > 0 ? (
           <Row dark={dark} label="Failure Uplift" value={m(breakdown.failureUplift)} />
         ) : null}
-        <Row dark={dark} label="Markup" value={m(breakdown.markupAmount)} />
+        {breakdown.markupAmount > 0 ? (
+          <Row dark={dark} label="Service Fee" value={m(breakdown.markupAmount)} />
+        ) : null}
         {breakdown.vatAmount > 0 ? (
           <Row dark={dark} label="VAT" value={m(breakdown.vatAmount)} />
         ) : null}

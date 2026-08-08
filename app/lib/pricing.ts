@@ -126,8 +126,13 @@ export function calculatePrint(input: PrintInput): PrintBreakdown {
 
   const failureUplift =
     landed * (clampNonNeg(settings.failurePercent) / 100);
+
+  // Percent fee is per print; fixed fee is applied once at project level.
   const markupAmount =
-    (landed + failureUplift) * (clampNonNeg(settings.markupPercent) / 100);
+    settings.serviceFeeMode === "percent"
+      ? (landed + failureUplift) *
+        (clampNonNeg(settings.serviceFeeValue) / 100)
+      : 0;
   const preVat = landed + failureUplift + markupAmount;
   const vatAmount = preVat * (clampNonNeg(settings.vatRate) / 100);
   const total = preVat + vatAmount;
@@ -150,14 +155,41 @@ export function calculatePrint(input: PrintInput): PrintBreakdown {
   };
 }
 
+/** Apply a project-level fixed service fee onto one print breakdown (usually the first). */
+export function withFixedServiceFee(
+  breakdown: PrintBreakdown,
+  settings: AppSettings,
+): PrintBreakdown {
+  if (settings.serviceFeeMode !== "fixed") return breakdown;
+  const fee = clampNonNeg(settings.serviceFeeValue);
+  if (fee <= 0) return breakdown;
+  const markupAmount = breakdown.markupAmount + fee;
+  const preVat = breakdown.landed + breakdown.failureUplift + markupAmount;
+  const vatAmount = preVat * (clampNonNeg(settings.vatRate) / 100);
+  return {
+    ...breakdown,
+    markupAmount,
+    preVat,
+    vatAmount,
+    total: preVat + vatAmount,
+  };
+}
+
 export function calculateProject(
   prints: Array<{ id: string; name: string; input: PrintInput }>,
 ): ProjectBreakdown {
-  const results = prints.map((p) => ({
-    id: p.id,
-    name: p.name,
-    breakdown: calculatePrint(p.input),
-  }));
+  const settings = prints[0]?.input.settings;
+  const results = prints.map((p, index) => {
+    let breakdown = calculatePrint(p.input);
+    if (index === 0 && settings) {
+      breakdown = withFixedServiceFee(breakdown, settings);
+    }
+    return {
+      id: p.id,
+      name: p.name,
+      breakdown,
+    };
+  });
 
   const empty: PrintBreakdown = {
     materialCost: 0,
@@ -308,14 +340,15 @@ export function calculateQuote(input: {
       currencyCode: "PHP",
       currencySymbol: "₱",
       machineRatePerHour: input.machineRatePerHour,
-      markupPercent: input.markupPercent,
+      serviceFeeMode: "percent",
+      serviceFeeValue: input.markupPercent,
       vatRate: 0,
       laborRatePerHour: 0,
       powerWatts: 0,
       electricityPerKwh: 0,
       failurePercent: 0,
       printerPurchasePrice: 0,
-      printerLifespanHours: 5000,
+      printerLifespanHours: 0,
       slaConsumablesPerPrint: 0,
       slaSupportWastePercent: 0,
       defaultFilamentPricePerKg: 650,

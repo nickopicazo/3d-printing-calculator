@@ -153,11 +153,31 @@ export async function action({ request }: Route.ActionArgs) {
     prints?: PrintPayload[];
   };
 
-  const name = (body.name ?? "").trim() || "Untitled project";
+  const name = (body.name ?? "").trim();
+  if (!name) {
+    throw data({ error: "Project name is required." }, { status: 400 });
+  }
   const settings = normalizeSettings(body.settings);
   const printPayloads = body.prints ?? [];
   if (printPayloads.length === 0) {
     throw data({ error: "At least one print is required." }, { status: 400 });
+  }
+  for (let i = 0; i < printPayloads.length; i++) {
+    if (!(printPayloads[i]?.name ?? "").trim()) {
+      throw data(
+        { error: `Print ${i + 1} needs a name.` },
+        { status: 400 },
+      );
+    }
+  }
+  if (body.customer?.email?.trim()) {
+    const email = body.customer.email.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      throw data(
+        { error: "Enter a valid customer email address." },
+        { status: 400 },
+      );
+    }
   }
 
   let customerId: string | null = body.customerId ?? null;
@@ -262,7 +282,7 @@ export async function action({ request }: Route.ActionArgs) {
       id: printId,
       projectId,
       userId: session.user.id,
-      name: (p.name ?? "").trim() || `Print ${i + 1}`,
+      name: (p.name ?? "").trim(),
       technology: p.technology === "sla" ? "sla" : "fdm",
       printerName: (p.printerName ?? "").trim() || null,
       sourceName: p.sourceName ?? null,

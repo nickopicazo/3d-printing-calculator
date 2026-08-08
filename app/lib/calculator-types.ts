@@ -51,6 +51,7 @@ export function emptyCustomer(): CustomerDraft {
 export function emptyPrint(
   settings: AppSettings,
   technology: Technology = "fdm",
+  name = "Print 1",
 ): PrintDraft {
   const price =
     technology === "sla"
@@ -58,7 +59,7 @@ export function emptyPrint(
       : settings.defaultFilamentPricePerKg;
   return {
     id: createId("print"),
-    name: "Print 1",
+    name,
     technology,
     printerName: "",
     sourceName: null,
@@ -73,10 +74,25 @@ export function emptyPrint(
   };
 }
 
+/** Next default label like Print 2, Print 3, … based on existing prints. */
+export function nextPrintName(prints: { name: string }[]): string {
+  let max = prints.length;
+  for (const print of prints) {
+    const match = /^Print\s+(\d+)$/i.exec(print.name.trim());
+    if (match) max = Math.max(max, Number(match[1]));
+  }
+  return `Print ${max + 1}`;
+}
+
+/** True when the name is still an auto-generated Print N label (or empty). */
+export function isDefaultPrintName(name: string): boolean {
+  return !name.trim() || /^Print\s+\d+$/i.test(name.trim());
+}
+
 export function emptyProject(settings: AppSettings): ProjectDraft {
   return {
     id: null,
-    name: "Untitled project",
+    name: "",
     customer: emptyCustomer(),
     prints: [emptyPrint(settings)],
   };

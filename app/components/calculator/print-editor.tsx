@@ -1,5 +1,4 @@
 import { Upload } from "lucide-react";
-import { Link } from "react-router";
 import { remapMaterialsForTech } from "~/components/calculator/materials-editor";
 import { MaterialsEditor } from "~/components/calculator/materials-editor";
 import { Button } from "~/components/ui/button";
@@ -24,6 +23,9 @@ type Props = {
   onRemove?: () => void;
   onUploadFile?: (file: File) => void;
   uploading?: boolean;
+  /** When true, skip the outer card chrome (parent already provides it). */
+  embedded?: boolean;
+  nameError?: string;
 };
 
 export function PrintEditor({
@@ -36,6 +38,8 @@ export function PrintEditor({
   onRemove,
   onUploadFile,
   uploading,
+  embedded = false,
+  nameError,
 }: Props) {
   const defaultPrice =
     print.technology === "sla"
@@ -55,16 +59,30 @@ export function PrintEditor({
   }
 
   return (
-    <div className="dash-card space-y-4">
+    <div className={embedded ? "space-y-4" : "dash-card space-y-4"}>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1.5">
-          <Label htmlFor={`part-${print.id}`}>Part / file name</Label>
+          <Label htmlFor={`part-${print.id}`}>
+            Part / File Name <span className="text-[#a33b2b]">*</span>
+          </Label>
           <Input
             id={`part-${print.id}`}
+            required
             value={print.name}
+            aria-invalid={Boolean(nameError)}
+            aria-describedby={nameError ? `part-${print.id}-error` : undefined}
             onChange={(e) => onChange({ ...print, name: e.target.value })}
-            className="min-w-[200px]"
+            className={
+              nameError
+                ? "min-w-[200px] border-[#e8c4be] focus:border-[#a33b2b] focus:shadow-[0_0_0_3px_rgba(163,59,43,0.15)]"
+                : "min-w-[200px]"
+            }
           />
+          {nameError ? (
+            <p id={`part-${print.id}-error`} className="text-xs text-[#a33b2b]">
+              {nameError}
+            </p>
+          ) : null}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {loggedIn && onUploadFile ? (
@@ -87,14 +105,10 @@ export function PrintEditor({
                 </span>
               </Button>
             </label>
-          ) : (
-            <Button type="button" variant="secondary" size="sm" asChild>
-              <Link to="/login">Sign in to upload</Link>
-            </Button>
-          )}
+          ) : null}
           {canRemove && onRemove ? (
             <Button type="button" variant="destructive" size="sm" onClick={onRemove}>
-              Remove print
+              Remove Print
             </Button>
           ) : null}
         </div>
@@ -117,13 +131,13 @@ export function PrintEditor({
             options={PRINTER_PRESETS.map((p) => ({ value: p, label: p }))}
             value={print.printerName}
             onChange={(v) => onChange({ ...print, printerName: v })}
-            placeholder="Printer name"
+            placeholder="Printer Name"
             allowCustom
           />
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-1.5">
-            <Label htmlFor={`ph-${print.id}`}>Print hours</Label>
+            <Label htmlFor={`ph-${print.id}`}>Print Hours</Label>
             <Input
               id={`ph-${print.id}`}
               type="number"
@@ -163,7 +177,7 @@ export function PrintEditor({
 
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="space-y-1.5">
-          <Label htmlFor={`labor-${print.id}`}>Labor time (min)</Label>
+          <Label htmlFor={`labor-${print.id}`}>Labor Time (Min)</Label>
           <Input
             id={`labor-${print.id}`}
             type="number"
@@ -175,7 +189,7 @@ export function PrintEditor({
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor={`hw-${print.id}`}>Hardware cost</Label>
+          <Label htmlFor={`hw-${print.id}`}>Hardware Cost</Label>
           <Input
             id={`hw-${print.id}`}
             type="number"
@@ -187,7 +201,7 @@ export function PrintEditor({
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor={`pkg-${print.id}`}>Packaging cost</Label>
+          <Label htmlFor={`pkg-${print.id}`}>Packaging Cost</Label>
           <Input
             id={`pkg-${print.id}`}
             type="number"
@@ -203,10 +217,10 @@ export function PrintEditor({
         </div>
       </div>
 
-      {print.plates.filter((p) => p.imageDataUrl).length > 0 ? (
+      {print.plates.filter((p) => p.sliced && p.imageDataUrl).length > 0 ? (
         <div className="flex flex-wrap gap-2">
           {print.plates
-            .filter((p) => p.imageDataUrl)
+            .filter((p) => p.sliced && p.imageDataUrl)
             .map((p) => (
               <img
                 key={p.plateIndex}

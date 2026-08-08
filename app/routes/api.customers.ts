@@ -22,7 +22,11 @@ export async function action({ request }: Route.ActionArgs) {
   const name = (body.name ?? "").trim();
   if (!name) throw data({ error: "Customer name is required." }, { status: 400 });
 
-  const email = (body.email ?? "").trim() || null;
+  const emailRaw = (body.email ?? "").trim();
+  if (emailRaw && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailRaw)) {
+    throw data({ error: "Enter a valid email address." }, { status: 400 });
+  }
+  const email = emailRaw || null;
   const phone = (body.phone ?? "").trim() || null;
   const address = (body.address ?? "").trim() || null;
 

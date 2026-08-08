@@ -10,6 +10,7 @@ type Props = {
   saved: SavedCustomer[];
   loggedIn: boolean;
   saving?: boolean;
+  emailError?: string;
   onChange: (customer: CustomerDraft) => void;
   onSave?: () => void;
 };
@@ -19,6 +20,7 @@ export function CustomerSection({
   saved,
   loggedIn,
   saving,
+  emailError,
   onChange,
   onSave,
 }: Props) {
@@ -36,13 +38,13 @@ export function CustomerSection({
             disabled={saving || !customer.name.trim()}
             onClick={onSave}
           >
-            {saving ? "Saving…" : "Save customer"}
+            {saving ? "Saving…" : "Save Customer"}
           </Button>
         ) : null}
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1.5 sm:col-span-2">
-          <Label>Customer name</Label>
+          <Label>Customer Name</Label>
           {saved.length > 0 ? (
             <Combobox
               options={options}
@@ -61,7 +63,7 @@ export function CustomerSection({
                   onChange({ ...customer, id: null, name: v });
                 }
               }}
-              placeholder="Select or type name"
+              placeholder="Select or Type Name"
               allowCustom
             />
           ) : (
@@ -70,7 +72,7 @@ export function CustomerSection({
               onChange={(e) =>
                 onChange({ ...customer, id: null, name: e.target.value })
               }
-              placeholder="Customer name"
+              placeholder="Customer Name"
             />
           )}
         </div>
@@ -80,8 +82,20 @@ export function CustomerSection({
             id="cust-email"
             type="email"
             value={customer.email}
+            aria-invalid={Boolean(emailError)}
+            aria-describedby={emailError ? "cust-email-error" : undefined}
+            className={
+              emailError
+                ? "border-[#e8c4be] focus:border-[#a33b2b] focus:shadow-[0_0_0_3px_rgba(163,59,43,0.15)]"
+                : undefined
+            }
             onChange={(e) => onChange({ ...customer, email: e.target.value })}
           />
+          {emailError ? (
+            <p id="cust-email-error" className="text-xs text-[#a33b2b]">
+              {emailError}
+            </p>
+          ) : null}
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="cust-phone">Phone</Label>

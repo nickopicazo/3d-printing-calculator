@@ -58,11 +58,11 @@ export function AppShell({
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="flex min-h-dvh flex-col">
       <a href="#main-content" className="skip-link">
         Skip to content
       </a>
-      <header className="sticky top-0 z-40 bg-[var(--color-paper)]/85 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 shrink-0 bg-[var(--color-paper)]/85 backdrop-blur-xl">
         <div className="page-shell !py-3 sm:!py-4">
           <div className="flex items-center justify-between gap-4">
             <div className="flex min-w-0 items-center gap-4 md:gap-6">
@@ -188,9 +188,11 @@ export function AppShell({
         )}
       </header>
 
-      <div id="main-content">{children}</div>
+      <div id="main-content" className="flex-1">
+        {children}
+      </div>
 
-      <footer className="border-t border-[var(--color-line)] bg-white/60">
+      <footer className="mt-auto shrink-0 border-t border-[var(--color-line)] bg-white/60">
         <div className="page-shell !py-8">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
             <div className="max-w-md space-y-2">

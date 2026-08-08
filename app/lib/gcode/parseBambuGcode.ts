@@ -10,6 +10,8 @@ export type ParsedBambuGcode = {
   filaments: ParsedFilament[];
   totalMinutes: number | null;
   sourcePlate: string | null;
+  /** Friendly model name from `; printer_model = …` */
+  printerModel: string | null;
   warnings: string[];
 };
 
@@ -23,6 +25,7 @@ const MODEL_TIME_RE =
 const FILAMENT_TYPE_RE = /;\s*filament_type\s*=\s*(.+)$/im;
 const FILAMENT_COLOUR_RE = /;\s*filament_colour\s*=\s*(.+)$/im;
 const FILAMENT_SETTINGS_RE = /;\s*filament_settings_id\s*=\s*(.+)$/im;
+const PRINTER_MODEL_RE = /;\s*printer_model\s*=\s*(.+)$/im;
 
 /**
  * Parse Bambu Studio / OrcaSlicer G-code header for exact quote inputs.
@@ -52,6 +55,10 @@ export function parseBambuGcodeHeader(
   const settingsIds = parseQuotedOrSemicolonList(
     configSlice.match(FILAMENT_SETTINGS_RE)?.[1],
   );
+  const printerModelRaw = configSlice.match(PRINTER_MODEL_RE)?.[1]?.trim() ?? "";
+  const printerModel = printerModelRaw
+    ? printerModelRaw.replace(/^"|"$/g, "").trim() || null
+    : null;
 
   let totalMinutes: number | null = null;
   const totalTimeMatch = header.match(TOTAL_TIME_RE);
@@ -111,6 +118,7 @@ export function parseBambuGcodeHeader(
     filaments,
     totalMinutes,
     sourcePlate,
+    printerModel,
     warnings,
   };
 }

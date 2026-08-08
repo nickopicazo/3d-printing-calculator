@@ -82,7 +82,12 @@ export async function extractFromGcodeUpload(
       totalMinutes: parsed.totalMinutes,
       sourcePath: file.name,
       imageDataUrl: null,
-      metadata: { source: "standalone-gcode" },
+      metadata: {
+        source: "standalone-gcode",
+        ...(parsed.printerModel
+          ? { printer_model: parsed.printerModel }
+          : {}),
+      },
       warnings: parsed.warnings,
     };
     return finalizeResult(file.name, [plate]);
@@ -125,7 +130,12 @@ export async function extractFromGcodeUpload(
           totalMinutes: parsed.totalMinutes,
           sourcePath: platePath,
           imageDataUrl,
-          metadata: { source: "gcode-header" },
+          metadata: {
+            source: "gcode-header",
+            ...(parsed.printerModel
+              ? { printer_model: parsed.printerModel }
+              : {}),
+          },
           warnings: parsed.warnings,
         };
         return finalizeResult(file.name, [plate]);
@@ -144,7 +154,7 @@ export async function extractFromGcodeUpload(
     let sourcePath = fromSlice?.sourcePath ?? null;
     let metadata: Record<string, unknown> = fromSlice?.metadata ?? {};
 
-    if ((!parsed || parsed.filaments.length === 0) && gcode) {
+    if (gcode) {
       const entry = zip.file(gcode.name);
       if (entry) {
         const bytes = await entry.async("uint8array");
@@ -152,28 +162,37 @@ export async function extractFromGcodeUpload(
         const headerText = new TextDecoder("utf-8", { fatal: false }).decode(
           slice,
         );
-        parsed = parseBambuGcodeHeader(headerText, gcode.name);
+        const fromGcode = parseBambuGcodeHeader(headerText, gcode.name);
         sourcePath = gcode.name;
-        metadata = { ...metadata, source: "gcode-header" };
+        if (!parsed || parsed.filaments.length === 0) {
+          parsed = fromGcode;
+        } else if (
+          (parsed.totalMinutes == null || parsed.totalMinutes <= 0) &&
+          fromGcode.totalMinutes != null
+        ) {
+          parsed = { ...parsed, totalMinutes: fromGcode.totalMinutes };
+        }
+        metadata = {
+          ...metadata,
+          source: metadata.source ?? "gcode-header",
+          ...(fromGcode.printerModel
+            ? { printer_model: fromGcode.printerModel }
+            : {}),
+        };
       }
     }
 
-    const sliced = Boolean(
-      parsed &&
-        (parsed.filaments.length > 0 || parsed.totalMinutes != null) &&
-        gcode,
-    );
-
-    // Prefer slice_info when present even without matching gcode path naming
-    const effectivelySliced = Boolean(
+    const isSliced = Boolean(
       parsed && (parsed.filaments.length > 0 || parsed.totalMinutes != null),
     );
 
-    const imageDataUrl = await loadPlatePng(zip, index);
+    // Only load thumbnails for sliced/active plates (unsliced plates often
+    // still have preview PNGs that should not be used).
+    const imageDataUrl = isSliced ? await loadPlatePng(zip, index) : null;
 
     plates.push({
       plateIndex: index,
-      sliced: effectivelySliced || sliced,
+      sliced: isSliced,
       filaments: parsed?.filaments ?? [],
       totalMinutes: parsed?.totalMinutes ?? null,
       sourcePath,
@@ -198,22 +217,24 @@ function finalizeResult(
   plates: PlateImport[],
 ): GcodeImportResult {
   const sliced = plates.filter((p) => p.sliced);
+  const skipped = plates.length - sliced.length;
   const filaments = aggregateFilaments(sliced.flatMap((p) => p.filaments));
   const totalMinutes = sliced.reduce((sum, p) => sum + (p.totalMinutes ?? 0), 0);
   const warnings = [
-    ...plates.flatMap((p) =>
+    ...sliced.flatMap((p) =>
       p.warnings.map((w) => `Plate ${p.plateIndex}: ${w}`),
     ),
   ];
-  if (plates.some((p) => !p.sliced)) {
+  if (skipped > 0) {
     warnings.push(
-      `${plates.filter((p) => !p.sliced).length} unsliced plate(s) included as thumbnails only.`,
+      `${skipped} unsliced plate(s) skipped (thumbnails and data not imported).`,
     );
   }
 
   return {
     sourceName,
-    plates,
+    // Only keep active/sliced plates — including their images.
+    plates: sliced,
     filaments,
     totalMinutes: totalMinutes > 0 ? totalMinutes : null,
     warnings,
@@ -221,7 +242,7 @@ function finalizeResult(
       sourceName,
       plateCount: plates.length,
       slicedPlateCount: sliced.length,
-      plates: plates.map((p) => ({
+      plates: sliced.map((p) => ({
         plateIndex: p.plateIndex,
         sliced: p.sliced,
         totalMinutes: p.totalMinutes,
@@ -356,6 +377,7 @@ export function parseSliceInfoConfig(
     filaments,
     totalMinutes,
     sourcePlate,
+    printerModel: null,
     warnings,
   };
 }

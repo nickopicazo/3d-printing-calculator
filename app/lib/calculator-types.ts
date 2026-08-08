@@ -102,6 +102,83 @@ export function printDraftMinutes(print: PrintDraft): number {
   return Math.max(0, print.printHours) * 60 + Math.max(0, print.printMinutesPart);
 }
 
+/** Basename, lowercased — used to spot the same file uploaded again. */
+export function normalizeSourceName(
+  name: string | null | undefined,
+): string | null {
+  if (!name?.trim()) return null;
+  const base = name.trim().replace(/^.*[/\\]/, "").toLowerCase();
+  return base || null;
+}
+
+/**
+ * Content signature from importable fields (time, printer, materials, plates).
+ * Ignores print display name and costs the user may have edited.
+ */
+export function printContentFingerprint(
+  print: Pick<
+    PrintDraft,
+    "printHours" | "printMinutesPart" | "printerName" | "materials" | "plates"
+  >,
+): string {
+  const minutes = printDraftMinutes(print as PrintDraft);
+  const materials = [...print.materials]
+    .map(
+      (m) =>
+        `${m.slot ?? ""}|${(m.type ?? "").trim().toLowerCase()}|${m.quantity}|${m.unit}`,
+    )
+    .sort()
+    .join(";");
+  const plates = [...print.plates]
+    .map((p) => `${p.plateIndex}:${p.totalMinutes ?? ""}`)
+    .sort()
+    .join(";");
+  return [
+    minutes,
+    print.printerName.trim().toLowerCase(),
+    materials,
+    plates,
+  ].join("|");
+}
+
+function hasImportSignal(print: PrintDraft): boolean {
+  return Boolean(
+    normalizeSourceName(print.sourceName) ||
+      print.plates.length > 0 ||
+      printDraftMinutes(print) > 0 ||
+      print.materials.some((m) => m.quantity > 0),
+  );
+}
+
+/**
+ * Find an existing print that looks like the same upload (same filename and/or
+ * same extracted content). Pass `excludeId` to allow re-import onto that print.
+ */
+export function findDuplicatePrint(
+  prints: PrintDraft[],
+  candidate: PrintDraft,
+  excludeId?: string,
+): PrintDraft | null {
+  if (!hasImportSignal(candidate)) return null;
+
+  const candSource = normalizeSourceName(candidate.sourceName);
+  const candFp = printContentFingerprint(candidate);
+
+  for (const print of prints) {
+    if (excludeId && print.id === excludeId) continue;
+    if (!hasImportSignal(print)) continue;
+
+    const existingSource = normalizeSourceName(print.sourceName);
+    if (candSource && existingSource && candSource === existingSource) {
+      return print;
+    }
+    if (printContentFingerprint(print) === candFp) {
+      return print;
+    }
+  }
+  return null;
+}
+
 export type InventoryMaterial = {
   id: string;
   name: string;

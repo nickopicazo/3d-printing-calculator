@@ -478,47 +478,12 @@ export default function Home() {
     }
   }
 
-  async function generateQuote() {
-    setBusy(true);
-    setError(null);
-    try {
-      const projectId = await saveProject({ navigate: false });
-      if (!projectId) return;
-      setBusy(true);
-      const res = await fetch("/api/quotes", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          projectId,
-          title: `${project.name} — Quote`,
-          settings,
-        }),
-      });
-      const payload = await res.json();
-      if (!res.ok) throw new Error(payload.error ?? "Could not create quote.");
-      navigate(`/quotes/${payload.id}`);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Quote failed.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
   return (
     <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 animate-fade-up">
       <div className="mb-8">
-        <p className="text-sm font-medium uppercase tracking-wider text-[var(--color-accent-deep)]">
+        <h1 className="font-display text-3xl font-extrabold tracking-tight sm:text-4xl">
           3D Printing Calculator
-        </p>
-        <h1 className="font-display mt-1 text-3xl font-extrabold tracking-tight sm:text-4xl">
-          Print Quote
         </h1>
-        <p className="mt-2 max-w-2xl text-[var(--color-ink-muted)]">
-          Price FDM and SLA jobs with materials, labor, machine time, and VAT.
-          {loggedIn
-            ? " Upload slicer files, manage multi-print projects, and generate invoices."
-            : " Sign in to upload G-code / 3MF and save projects."}
-        </p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
@@ -686,23 +651,27 @@ export default function Home() {
             : null}
 
           <div className="flex flex-col gap-2">
-            <Button type="button" variant="secondary" onClick={() => window.print()}>
-              <Printer />
-              Print / Download PDF
-            </Button>
+            {loggedIn && project.id ? (
+              <Button asChild>
+                <Link to={`/projects/${project.id}/invoice`}>
+                  <Printer />
+                  Print / Download PDF
+                </Link>
+              </Button>
+            ) : (
+              <Button type="button" variant="secondary" onClick={() => window.print()}>
+                <Printer />
+                Print / Download PDF
+              </Button>
+            )}
             {loggedIn ? (
-              <>
-                <Button type="button" variant="secondary" disabled={busy} onClick={() => void saveProject()}>
-                  <Save />
-                  Save project
-                </Button>
-                <Button type="button" disabled={busy} onClick={generateQuote}>
-                  Generate quote
-                </Button>
-              </>
+              <Button type="button" disabled={busy} onClick={() => void saveProject()}>
+                <Save />
+                Save project
+              </Button>
             ) : (
               <Button asChild>
-                <Link to="/login">Sign in to save quotes</Link>
+                <Link to="/login">Sign in to save projects</Link>
               </Button>
             )}
           </div>

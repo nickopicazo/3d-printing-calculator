@@ -3,7 +3,6 @@ import {
   createEmptyMaterial,
   createId,
   type MaterialLine,
-  type PrintBreakdown,
   type Technology,
 } from "~/lib/pricing";
 import type { AppSettings } from "~/lib/settings";
@@ -108,23 +107,6 @@ export type SavedProject = {
   id: string;
   name: string;
   customerId: string | null;
-};
-
-export type QuotePrintSnapshot = {
-  id: string;
-  name: string;
-  technology: Technology;
-  printerName: string | null;
-  printMinutes: number;
-  laborMinutes: number;
-  materials: Array<{
-    label: string;
-    unit: string;
-    quantity: number;
-    pricePerUnit: number;
-    type?: string | null;
-  }>;
-  breakdown: PrintBreakdown;
 };
 
 export function dataUrlToBuffer(dataUrl: string): Buffer | null {

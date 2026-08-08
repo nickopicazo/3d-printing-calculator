@@ -13,11 +13,11 @@ import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Textarea } from "~/components/ui/textarea";
 import { db } from "~/db/index.server";
-import { customers, projects, quotes } from "~/db/schema";
+import { customers, projects } from "~/db/schema";
 import { newId, requireUser } from "~/lib/session.server";
 
 export function meta({}: Route.MetaArgs) {
-  return [{ title: "Customers · Print Quote" }];
+  return [{ title: "Customers · 3D Printing Calculator" }];
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -34,19 +34,10 @@ export async function loader({ request }: Route.LoaderArgs) {
     .where(eq(projects.userId, session.user.id))
     .orderBy(desc(projects.updatedAt));
 
-  const quoteCounts = await db
-    .select({
-      customerId: quotes.customerId,
-      projectId: quotes.projectId,
-    })
-    .from(quotes)
-    .where(eq(quotes.userId, session.user.id));
-
   return {
     customers: customerRows.map((c) => ({
       ...c,
       projects: projectRows.filter((p) => p.customerId === c.id),
-      quoteCount: quoteCounts.filter((q) => q.customerId === c.id).length,
     })),
   };
 }
@@ -171,8 +162,8 @@ export default function CustomersPage() {
                         .filter(Boolean)
                         .join(" · ") || "No contact details"}
                       {" · "}
-                      {customer.quoteCount} quote
-                      {customer.quoteCount === 1 ? "" : "s"}
+                      {customer.projects.length} project
+                      {customer.projects.length === 1 ? "" : "s"}
                     </CardDescription>
                   </div>
                   <Form method="post">
@@ -201,10 +192,10 @@ export default function CustomersPage() {
                           </Link>
                           {" · "}
                           <Link
-                            to={`/quotes?projectId=${p.id}`}
+                            to={`/projects/${p.id}/invoice`}
                             className="text-[var(--color-ink-muted)] hover:underline"
                           >
-                            quotes
+                            invoice
                           </Link>
                         </li>
                       ))}

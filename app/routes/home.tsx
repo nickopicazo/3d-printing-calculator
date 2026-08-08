@@ -806,22 +806,6 @@ export default function Home() {
               New Project
             </Button>
           ) : null}
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => window.print()}
-          >
-            <Printer />
-            Print Quote
-          </Button>
-          {loggedIn && project.id ? (
-            <Button asChild variant="secondary">
-              <Link to={`/projects/${project.id}/invoice`}>
-                <Download />
-                Export PDF
-              </Link>
-            </Button>
-          ) : null}
           {loggedIn && project.id ? (
             <Button
               type="button"
@@ -1211,16 +1195,37 @@ export default function Home() {
         </div>
 
         <aside className="space-y-4 xl:sticky xl:top-24 xl:self-start">
-          <CostBreakdown
-            breakdown={projectCalc}
-            currencySymbol={settings.currencyCode}
-            variant="dark"
-            title={
-              project.prints.length > 1
-                ? `Project Total (${project.prints.length} Prints)`
-                : "Estimated Total"
-            }
-          />
+          <div className="space-y-3">
+            <CostBreakdown
+              breakdown={projectCalc}
+              currencySymbol={settings.currencyCode}
+              variant="dark"
+              title={
+                project.prints.length > 1
+                  ? `Project Total (${project.prints.length} Prints)`
+                  : "Estimated Total"
+              }
+            />
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                className="flex-1"
+                onClick={() => window.print()}
+              >
+                <Printer />
+                Print Quote
+              </Button>
+              {loggedIn && project.id ? (
+                <Button asChild variant="secondary" className="flex-1">
+                  <Link to={`/projects/${project.id}/invoice`}>
+                    <Download />
+                    Export PDF
+                  </Link>
+                </Button>
+              ) : null}
+            </div>
+          </div>
 
           {loggedIn && data.projects.length > 0 ? (
             <div className="dash-card text-sm">

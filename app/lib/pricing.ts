@@ -71,6 +71,17 @@ export function printMinutesToHours(minutes: number): number {
   return minutes / 60;
 }
 
+export function minutesToHoursMinutes(totalMinutes: number): {
+  hours: number;
+  minutes: number;
+} {
+  const safe = Math.max(0, Math.round(totalMinutes));
+  return {
+    hours: Math.floor(safe / 60),
+    minutes: safe % 60,
+  };
+}
+
 function clampNonNeg(value: unknown): number {
   return Number.isFinite(value as number) ? Math.max(0, value as number) : 0;
 }

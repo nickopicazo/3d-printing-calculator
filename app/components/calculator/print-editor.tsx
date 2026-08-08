@@ -105,7 +105,7 @@ export function PrintEditor({
             <label className="inline-flex">
               <input
                 type="file"
-                accept=".gcode,.3mf,.zip,.gcode.3mf,image/*"
+                accept=".gcode,.3mf,.zip,.gcode.3mf"
                 className="sr-only"
                 disabled={uploading}
                 onChange={(e) => {

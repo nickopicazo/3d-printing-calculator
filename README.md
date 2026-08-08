@@ -46,7 +46,7 @@ Shop rates (machine, labor, electricity, VAT, service fee, SLA helpers) live in 
 | UI | Tailwind 4, shadcn/Radix, Lucide |
 | DB | PostgreSQL 16, Drizzle ORM |
 | Auth | Better Auth + Google OAuth |
-| Import | JSZip (archives), Tesseract.js (slicer screenshot OCR) |
+| Import | JSZip (3MF / ZIP / G-code archives) |
 | Deploy | Docker → Railway |
 
 ## Setup
@@ -88,7 +88,6 @@ Google Cloud Console redirect URI:
 | `npm run db:generate` / `db:migrate` | Generate / run migrations |
 | `npm run db:studio` | Drizzle Studio |
 | `npm run check:gcode` | Smoke-test G-code / 3MF import |
-| `npm run check:parser` | Smoke-test header parser |
 
 ## G-code / 3MF import
 
@@ -98,7 +97,6 @@ Supported uploads:
 |---|---|
 | `.gcode.3mf`, `.3mf`, `.zip` | Unzipped in-browser; multi-plate |
 | Standalone `.gcode` | First ~64KB header only |
-| Slicer screenshot (`image/*`) | OCR for grams and print time |
 
 **Extracted fields** (Bambu / Orca headers and `Metadata/slice_info.config`):
 
@@ -112,7 +110,6 @@ Supported uploads:
 
 ```bash
 npm run check:gcode
-npm run check:parser
 ```
 
 ## App routes
@@ -142,7 +139,6 @@ app/
     settings.ts           # local rates
     calculator-types.ts   # drafts + import fingerprints
     gcode/                # 3MF / ZIP / G-code import
-    ocr/                  # screenshot OCR
     auth*.ts, storage.server.ts
   db/                     # Drizzle schema + client
 drizzle/                  # migrations

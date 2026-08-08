@@ -50,7 +50,7 @@ import {
   type SavedProject,
 } from "~/lib/calculator-types";
 import { createId, calculateProject } from "~/lib/pricing";
-import { minutesToHoursMinutes } from "~/lib/ocr/parseSlicerResult";
+import { minutesToHoursMinutes } from "~/lib/pricing";
 import { getSession } from "~/lib/session.server";
 import {
   DEFAULT_SETTINGS,
@@ -365,36 +365,6 @@ export default function Home() {
     file: File,
     base: PrintDraft,
   ): Promise<PrintDraft> {
-    if (file.type.startsWith("image/")) {
-      const { extractFromSlicerScreenshot } = await import("~/lib/ocr/runOcr");
-      const result = await extractFromSlicerScreenshot(file);
-      const hm = minutesToHoursMinutes(result.totalMinutes ?? 0);
-      const price =
-        base.technology === "sla"
-          ? settings.defaultResinPricePerLitre
-          : settings.defaultFilamentPricePerKg;
-      return {
-        ...base,
-        sourceName: file.name,
-        printHours: hm.hours,
-        printMinutesPart: hm.minutes,
-        materials:
-          result.filamentGrams.length > 0
-            ? result.filamentGrams.map((grams, i) => ({
-                id: createId("mat"),
-                label: `Imported ${i + 1}`,
-                quantity: grams,
-                unit: "g" as const,
-                pricePerUnit: price,
-                inventoryMaterialId: null,
-                slot: null,
-                type: null,
-                color: null,
-              }))
-            : base.materials,
-      };
-    }
-
     const { extractFromGcodeUpload, isSupportedGcodeImport } = await import(
       "~/lib/gcode/loadFromArchive"
     );
@@ -1035,7 +1005,7 @@ export default function Home() {
                   <label className="inline-flex">
                     <input
                       type="file"
-                      accept=".gcode,.3mf,.zip,.gcode.3mf,image/*"
+                      accept=".gcode,.3mf,.zip,.gcode.3mf"
                       multiple
                       className="sr-only"
                       disabled={uploadPrintId != null}

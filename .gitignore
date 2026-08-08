@@ -7,12 +7,5 @@
 /.react-router/
 /build/
 
-# Tesseract language data (downloaded at runtime / locally)
-/eng.traineddata
-
-# Full Bambu exports (use sample/fixtures for CI-sized checks)
-/sample/sample-1.gcode.3mf/
-/sample/sample-1.gcode.3mf.zip
-
 # Cursor agent skill cache
 /.agents/

@@ -1,0 +1,31 @@
+---
+description: Prefer shadcn/ui components for all UI and form controls
+alwaysApply: true
+---
+
+# Use shadcn/ui for UI
+
+All interactive and form UI in this app must use the project's shadcn components under `app/components/ui/`.
+
+## Required
+
+- Forms: `Input`, `Textarea`, `Label`, `Select`, `Combobox`, `Button`, `Checkbox`/`Switch` (when added), and `InputGroup` for compound fields (value + unit/mode addon).
+- Overlays: `Dialog`, `Popover`, `DropdownMenu` — not browser `alert`/`confirm` for product flows.
+- Layout primitives already in the design system: `Card`, `Tabs`, `Separator`, `Collapsible`.
+- Compose with `InputGroup` + `InputGroupInput` + `InputGroupAddon` when an input has a linked control (%, currency, mode select, icon, button).
+
+## Do not
+
+- Do not add raw `<select>`, unstyled `<button>`, or one-off form control CSS that duplicates shadcn primitives.
+- Do not introduce another component library for the same jobs (MUI, Ant, plain HTML form kits).
+- Do not style native inputs to "look like" shadcn — use the shared components.
+
+## When a primitive is missing
+
+1. Add the shadcn component into `app/components/ui/` (match existing token styles: rounded-xl, `--color-line`, accent focus ring).
+2. Then use it in the feature.
+
+## Exceptions
+
+- Semantic HTML for accessibility (`label` via `Label`, file inputs may stay native and be triggered by a shadcn `Button`).
+- Print-only layouts may use inline styles for print reliability.

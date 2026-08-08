@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { Download, Plus, Printer, Save, Trash2 } from "lucide-react";
+import { Download, Plus, Printer, Save, Trash2, Upload } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Link,
@@ -1043,9 +1043,40 @@ export default function Home() {
 
           {activePrintId ? (
             <div className="space-y-3">
-              <h2 className="font-display text-2xl font-extrabold tracking-tight">
-                Prints
-              </h2>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h2 className="font-display text-2xl font-extrabold tracking-tight">
+                  Prints
+                </h2>
+                {loggedIn ? (
+                  <label className="inline-flex">
+                    <input
+                      type="file"
+                      accept=".gcode,.3mf,.zip,.gcode.3mf,image/*"
+                      multiple
+                      className="sr-only"
+                      disabled={uploadPrintId != null}
+                      onChange={(e) => {
+                        const list = e.target.files;
+                        if (list && list.length > 0 && activePrintId) {
+                          void handleUploadFiles(
+                            activePrintId,
+                            Array.from(list),
+                          );
+                        }
+                        e.target.value = "";
+                      }}
+                    />
+                    <Button type="button" variant="secondary" size="sm" asChild>
+                      <span className="inline-flex cursor-pointer items-center gap-2">
+                        <Upload className="size-4" />
+                        {uploadPrintId != null
+                          ? "Importing…"
+                          : "Upload Multiple 3MF / G-code"}
+                      </span>
+                    </Button>
+                  </label>
+                ) : null}
+              </div>
               {message || warning || error ? (
                 <div className="space-y-2">
                   {message ? (

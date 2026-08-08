@@ -6,7 +6,7 @@ const connectionString = process.env.DATABASE_URL;
 
 if (!connectionString) {
   console.warn(
-    "DATABASE_URL is not set. Auth and saved quotes require Postgres.",
+    "DATABASE_URL is not set. Auth and saved projects require Postgres.",
   );
 }
 

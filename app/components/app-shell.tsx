@@ -12,8 +12,8 @@ export type NavUser = {
 } | null;
 
 const links = [
-  { to: "/", label: "Estimator" },
-  { to: "/quotes", label: "Quotes", auth: true },
+  { to: "/", label: "Calculator" },
+  { to: "/projects", label: "Projects", auth: true },
   { to: "/materials", label: "Materials", auth: true },
   { to: "/customers", label: "Customers", auth: true },
 ];
@@ -35,7 +35,7 @@ export function AppShell({
       <header className="sticky top-0 z-40 border-b border-[var(--color-line)]/80 bg-[rgba(243,246,248,0.85)] backdrop-blur-md">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
           <Link to="/" className="font-display text-lg font-extrabold tracking-tight">
-            Print Quote
+            3D Printing Calculator
           </Link>
 
           <nav className="hidden items-center gap-1 md:flex">

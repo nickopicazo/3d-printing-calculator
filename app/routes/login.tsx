@@ -13,7 +13,7 @@ import { getSession } from "~/lib/session.server";
 import { redirect } from "react-router";
 
 export function meta({}: Route.MetaArgs) {
-  return [{ title: "Sign in · Print Quote" }];
+  return [{ title: "Sign in · 3D Printing Calculator" }];
 }
 
 export async function loader({ request }: Route.LoaderArgs) {
@@ -40,13 +40,10 @@ export default function LoginPage() {
     <main className="mx-auto flex min-h-[70vh] max-w-md items-center px-4 py-16">
       <Card className="w-full animate-fade-up">
         <CardHeader>
-          <p className="font-display text-sm font-semibold tracking-[0.18em] text-[var(--color-accent-deep)] uppercase">
-            Print Quote
-          </p>
-          <CardTitle className="mt-2 text-3xl">Sign in</CardTitle>
+          <CardTitle className="text-3xl">Sign in</CardTitle>
           <CardDescription>
-            Use Google to save quotes, manage materials, and keep customer
-            projects organized.
+            Use Google to save projects, manage materials, and keep customers
+            organized.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

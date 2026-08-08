@@ -39,7 +39,7 @@ export function GuestInvoicePrint({
           }
         }
       `}</style>
-      <h1 style={{ fontSize: 22, marginBottom: 4 }}>Print Quote</h1>
+      <h1 style={{ fontSize: 22, marginBottom: 4 }}>3D Printing Calculator</h1>
       <p style={{ marginBottom: 16 }}>{projectName}</p>
       {customer.name ? (
         <div style={{ marginBottom: 16 }}>

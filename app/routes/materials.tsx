@@ -16,7 +16,7 @@ import { materials } from "~/db/schema";
 import { newId, requireUser } from "~/lib/session.server";
 
 export function meta({}: Route.MetaArgs) {
-  return [{ title: "Materials · Print Quote" }];
+  return [{ title: "Materials · 3D Printing Calculator" }];
 }
 
 export async function loader({ request }: Route.LoaderArgs) {

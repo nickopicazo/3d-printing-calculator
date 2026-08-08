@@ -23,5 +23,4 @@ WORKDIR /app
 RUN mkdir -p /app/uploads
 ENV UPLOAD_DIR=/app/uploads
 EXPOSE 3000
-VOLUME ["/app/uploads"]
 CMD ["npm", "run", "start"]

@@ -11,24 +11,36 @@ import {
 import type { Route } from "./+types/root";
 import { AppShell } from "~/components/app-shell";
 import { getSession } from "~/lib/session.server";
+import {
+  SITE_DESCRIPTION,
+  SITE_TITLE,
+  buildPageMeta,
+  faqJsonLd,
+  jsonLdScript,
+  webAppJsonLd,
+  websiteJsonLd,
+} from "~/lib/seo";
 import "./app.css";
 
 export const links: Route.LinksFunction = () => [
-  { rel: "preconnect", href: "https://fonts.googleapis.com" },
-  {
-    rel: "preconnect",
-    href: "https://fonts.gstatic.com",
-    crossOrigin: "anonymous",
-  },
-  {
-    rel: "stylesheet",
-    href: "https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap",
-  },
+  { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
+  { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
+  { rel: "manifest", href: "/site.webmanifest" },
 ];
+
+export function headers() {
+  return {
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "X-Frame-Options": "DENY",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+  };
+}
 
 export async function loader({ request }: Route.LoaderArgs) {
   const session = await getSession(request);
   return {
+    origin: new URL(request.url).origin,
     user: session?.user
       ? {
           id: session.user.id,
@@ -38,6 +50,19 @@ export async function loader({ request }: Route.LoaderArgs) {
         }
       : null,
   };
+}
+
+export function meta({ loaderData }: Route.MetaArgs) {
+  const origin = loaderData?.origin ?? "";
+  return [
+    ...buildPageMeta({
+      origin,
+      title: SITE_TITLE,
+      description: SITE_DESCRIPTION,
+      path: "/",
+    }),
+    jsonLdScript(websiteJsonLd(origin), webAppJsonLd(origin), faqJsonLd()),
+  ];
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {

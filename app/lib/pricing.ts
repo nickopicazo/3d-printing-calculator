@@ -3,6 +3,10 @@ export type FilamentLine = {
   label: string;
   grams: number;
   pricePerKg: number;
+  inventoryFilamentId?: string | null;
+  slot?: number | null;
+  type?: string | null;
+  color?: string | null;
 };
 
 export type QuoteInput = {
@@ -88,5 +92,9 @@ export function createEmptyFilament(
     label,
     grams: 0,
     pricePerKg,
+    inventoryFilamentId: null,
+    slot: null,
+    type: null,
+    color: null,
   };
 }

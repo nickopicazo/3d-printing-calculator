@@ -1,11 +1,13 @@
+export type ParsedFilament = {
+  slot: number;
+  grams: number;
+  label: string;
+  type: string | null;
+  color: string | null;
+};
+
 export type ParsedBambuGcode = {
-  filaments: Array<{
-    slot: number;
-    grams: number;
-    label: string;
-    type: string | null;
-    color: string | null;
-  }>;
+  filaments: ParsedFilament[];
   totalMinutes: number | null;
   sourcePlate: string | null;
   warnings: string[];

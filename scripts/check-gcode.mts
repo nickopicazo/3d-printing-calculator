@@ -89,6 +89,12 @@ assert(
   `zip f2 ${fromZip.filaments[1]?.grams}`,
 );
 assert(fromZip.totalMinutes === 583, `zip minutes ${fromZip.totalMinutes}`);
+assert(fromZip.plates.length >= 1, `zip plates ${fromZip.plates.length}`);
+assert(fromZip.plates[0]!.sliced, "plate 1 should be sliced");
+assert(
+  fromZip.metadataSnapshot.slicedPlateCount >= 1,
+  "metadata snapshot missing sliced plates",
+);
 
 console.log("G-code / 3MF fixture checks passed.");
 console.log({

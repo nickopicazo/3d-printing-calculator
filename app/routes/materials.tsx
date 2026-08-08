@@ -1,6 +1,6 @@
 import { and, desc, eq } from "drizzle-orm";
 import { Pencil, Plus, Trash2, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Form,
   redirect,
@@ -11,6 +11,14 @@ import {
 import type { Route } from "./+types/materials";
 import { ConfirmDeleteDialog } from "~/components/ui/confirm-delete-dialog";
 import { Button } from "~/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "~/components/ui/dialog";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import {
@@ -53,7 +61,7 @@ export async function action({ request }: Route.ActionArgs) {
     const color = String(form.get("color") ?? "").trim() || null;
     const pricePerUnit = Number(form.get("pricePerUnit"));
     if (!name || !Number.isFinite(pricePerUnit) || pricePerUnit < 0) {
-      return { error: "Name and a valid unit price are required." };
+      return { createError: "Name and a valid unit price are required." };
     }
     await db.insert(materials).values({
       id: newId(),
@@ -188,11 +196,20 @@ export default function MaterialsPage() {
   const navigation = useNavigation();
   const busy = navigation.state !== "idle";
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<{
     id: string;
     name: string;
   } | null>(null);
   const currency = DEFAULT_SETTINGS.currencyCode;
+  const createError =
+    actionData && "createError" in actionData && actionData.createError
+      ? actionData.createError
+      : null;
+
+  useEffect(() => {
+    if (createError) setAddOpen(true);
+  }, [createError]);
 
   return (
     <main className="page-shell">
@@ -218,72 +235,87 @@ export default function MaterialsPage() {
           }}
         />
 
-        <header className="mb-8 animate-fade-up">
-          <h1 className="font-display text-3xl font-extrabold">Materials</h1>
-          <p className="mt-2 text-[var(--color-ink-muted)]">
-            Filament and resin inventory for the calculator.
-          </p>
-        </header>
+        <Dialog open={addOpen} onOpenChange={setAddOpen}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Add Material</DialogTitle>
+              <DialogDescription>
+                Set a unit price once, then pick it from the calculator.
+              </DialogDescription>
+            </DialogHeader>
+            <Form method="post" className="grid gap-4 sm:grid-cols-2">
+              <input type="hidden" name="intent" value="create" />
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="name">Name</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  required
+                  placeholder="Bambu PETG HF"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="kind">Kind</Label>
+                <KindSelect id="kind" name="kind" detailed />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="type">Type</Label>
+                <Input
+                  id="type"
+                  name="type"
+                  placeholder="PETG / Standard Resin"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="color">Color</Label>
+                <ColorField id="color" name="color" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="pricePerUnit">Price / Unit</Label>
+                <Input
+                  id="pricePerUnit"
+                  name="pricePerUnit"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  required
+                  placeholder="750"
+                />
+              </div>
+              {createError ? (
+                <p className="text-sm text-[#a33b2b] sm:col-span-2">
+                  {createError}
+                </p>
+              ) : null}
+              <DialogFooter className="sm:col-span-2">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => setAddOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={busy}>
+                  <Plus />
+                  Save Material
+                </Button>
+              </DialogFooter>
+            </Form>
+          </DialogContent>
+        </Dialog>
 
-        <section className="dash-card mb-8 animate-fade-up space-y-5">
+        <header className="mb-8 flex flex-wrap items-start justify-between gap-4 animate-fade-up">
           <div>
-            <h2 className="font-display text-lg font-bold">Add Material</h2>
-            <p className="mt-1 text-sm text-[var(--color-ink-muted)]">
-              Set a unit price once, then pick it from the calculator.
+            <h1 className="font-display text-3xl font-extrabold">Materials</h1>
+            <p className="mt-2 text-[var(--color-ink-muted)]">
+              Filament and resin inventory for the calculator.
             </p>
           </div>
-          <Form method="post" className="grid gap-4 sm:grid-cols-2">
-            <input type="hidden" name="intent" value="create" />
-            <div className="space-y-1.5">
-              <Label htmlFor="name">Name</Label>
-              <Input
-                id="name"
-                name="name"
-                required
-                placeholder="Bambu PETG HF"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="kind">Kind</Label>
-              <KindSelect id="kind" name="kind" detailed />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="type">Type</Label>
-              <Input
-                id="type"
-                name="type"
-                placeholder="PETG / Standard Resin"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="color">Color</Label>
-              <ColorField id="color" name="color" />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="pricePerUnit">Price / Unit</Label>
-              <Input
-                id="pricePerUnit"
-                name="pricePerUnit"
-                type="number"
-                step="0.01"
-                min="0"
-                required
-                placeholder="750"
-              />
-            </div>
-            {actionData && "error" in actionData && actionData.error ? (
-              <p className="text-sm text-[#a33b2b] sm:col-span-2">
-                {actionData.error}
-              </p>
-            ) : null}
-            <div className="flex items-end sm:col-span-2">
-              <Button type="submit" disabled={busy}>
-                <Plus />
-                Save Material
-              </Button>
-            </div>
-          </Form>
-        </section>
+          <Button type="button" onClick={() => setAddOpen(true)}>
+            <Plus />
+            Add Material
+          </Button>
+        </header>
 
         <section className="dash-card animate-fade-up overflow-hidden !p-0">
           <div className="border-b border-[var(--color-line)] px-5 py-4 sm:px-6">
@@ -296,9 +328,15 @@ export default function MaterialsPage() {
           </div>
 
           {rows.length === 0 ? (
-            <p className="px-5 py-10 text-center text-sm text-[var(--color-ink-muted)] sm:px-6">
-              Add filament or resin above to reuse prices in quotes.
-            </p>
+            <div className="flex flex-col items-center gap-3 px-5 py-10 text-center sm:px-6">
+              <p className="text-sm text-[var(--color-ink-muted)]">
+                Add filament or resin to reuse prices in quotes.
+              </p>
+              <Button type="button" onClick={() => setAddOpen(true)}>
+                <Plus />
+                Add Material
+              </Button>
+            </div>
           ) : (
             <ul className="divide-y divide-[var(--color-line)]">
               {rows.map((row) => {

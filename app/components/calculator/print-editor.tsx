@@ -3,6 +3,7 @@ import { remapMaterialsForTech } from "~/components/calculator/materials-editor"
 import { MaterialsEditor } from "~/components/calculator/materials-editor";
 import { Button } from "~/components/ui/button";
 import { Combobox } from "~/components/ui/combobox";
+import { LabelWithHelp } from "~/components/ui/field-help";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Tabs, TabsList, TabsTrigger } from "~/components/ui/tabs";
@@ -21,7 +22,7 @@ type Props = {
   canRemove: boolean;
   onChange: (print: PrintDraft) => void;
   onRemove?: () => void;
-  onUploadFile?: (file: File) => void;
+  onUploadFiles?: (files: File[]) => void;
   uploading?: boolean;
   /** When true, skip the outer card chrome (parent already provides it). */
   embedded?: boolean;
@@ -36,7 +37,7 @@ export function PrintEditor({
   canRemove,
   onChange,
   onRemove,
-  onUploadFile,
+  onUploadFiles,
   uploading,
   embedded = false,
   nameError,
@@ -60,6 +61,23 @@ export function PrintEditor({
 
   return (
     <div className={embedded ? "space-y-4" : "dash-card space-y-4"}>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <Tabs
+          value={print.technology}
+          onValueChange={(v) => setTech(v as Technology)}
+        >
+          <TabsList>
+            <TabsTrigger value="fdm">Filament · FDM</TabsTrigger>
+            <TabsTrigger value="sla">Resin · SLA</TabsTrigger>
+          </TabsList>
+        </Tabs>
+        {canRemove && onRemove ? (
+          <Button type="button" variant="destructive" size="sm" onClick={onRemove}>
+            Remove Print
+          </Button>
+        ) : null}
+      </div>
+
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1.5">
           <Label htmlFor={`part-${print.id}`}>
@@ -84,45 +102,31 @@ export function PrintEditor({
             </p>
           ) : null}
         </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {loggedIn && onUploadFile ? (
-            <label className="inline-flex">
-              <input
-                type="file"
-                accept=".gcode,.3mf,.zip,.gcode.3mf,image/*"
-                className="sr-only"
-                disabled={uploading}
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) onUploadFile(f);
-                  e.target.value = "";
-                }}
-              />
-              <Button type="button" variant="secondary" size="sm" asChild>
-                <span className="inline-flex cursor-pointer items-center gap-2">
-                  <Upload className="size-4" />
-                  {uploading ? "Importing…" : "Upload 3MF / G-code"}
-                </span>
-              </Button>
-            </label>
-          ) : null}
-          {canRemove && onRemove ? (
-            <Button type="button" variant="destructive" size="sm" onClick={onRemove}>
-              Remove Print
+        {loggedIn && onUploadFiles && print.technology === "fdm" ? (
+          <label className="inline-flex self-end">
+            <input
+              type="file"
+              accept=".gcode,.3mf,.zip,.gcode.3mf,image/*"
+              multiple
+              className="sr-only"
+              disabled={uploading}
+              onChange={(e) => {
+                const list = e.target.files;
+                if (list && list.length > 0) {
+                  onUploadFiles(Array.from(list));
+                }
+                e.target.value = "";
+              }}
+            />
+            <Button type="button" asChild>
+              <span className="inline-flex cursor-pointer items-center gap-2">
+                <Upload className="size-4" />
+                {uploading ? "Importing…" : "Upload 3MF / G-code"}
+              </span>
             </Button>
-          ) : null}
-        </div>
+          </label>
+        ) : null}
       </div>
-
-      <Tabs
-        value={print.technology}
-        onValueChange={(v) => setTech(v as Technology)}
-      >
-        <TabsList>
-          <TabsTrigger value="fdm">Filament · FDM</TabsTrigger>
-          <TabsTrigger value="sla">Resin · SLA</TabsTrigger>
-        </TabsList>
-      </Tabs>
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
@@ -137,7 +141,26 @@ export function PrintEditor({
         </div>
         <div className="grid grid-cols-2 gap-2">
           <div className="space-y-1.5">
-            <Label htmlFor={`ph-${print.id}`}>Print Hours</Label>
+            <LabelWithHelp
+              htmlFor={`ph-${print.id}`}
+              tip="Print time drives machine and electricity cost."
+              title="Print time"
+              details={
+                <>
+                  <p>
+                    Machine cost = print hours × Machine Rate / Hr (project
+                    settings).
+                  </p>
+                  <p>
+                    Electricity cost = (Power W ÷ 1000) × print hours ×
+                    Electricity / kWh (Advanced Settings). Leave those at 0 to
+                    exclude them.
+                  </p>
+                </>
+              }
+            >
+              Print Hours
+            </LabelWithHelp>
             <Input
               id={`ph-${print.id}`}
               type="number"
@@ -177,7 +200,28 @@ export function PrintEditor({
 
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="space-y-1.5">
-          <Label htmlFor={`labor-${print.id}`}>Labor Time (Min)</Label>
+          <LabelWithHelp
+            htmlFor={`labor-${print.id}`}
+            tip="Needs Labor Rate / Hour in Advanced Settings to affect cost."
+            title="Labor time"
+            details={
+              <>
+                <p>
+                  Labor cost = (labor minutes ÷ 60) × Labor Rate / Hour from
+                  Advanced Settings.
+                </p>
+                <p>
+                  Current rate: {settings.currencySymbol}
+                  {settings.laborRatePerHour}/hr
+                  {settings.laborRatePerHour <= 0
+                    ? " — set a rate above 0 or this field will not change the total."
+                    : "."}
+                </p>
+              </>
+            }
+          >
+            Labor Time (Min)
+          </LabelWithHelp>
           <Input
             id={`labor-${print.id}`}
             type="number"
@@ -189,7 +233,12 @@ export function PrintEditor({
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor={`hw-${print.id}`}>Hardware Cost</Label>
+          <LabelWithHelp
+            htmlFor={`hw-${print.id}`}
+            tip="Flat add-on (screws, inserts, etc.). No hourly rate."
+          >
+            Hardware Cost
+          </LabelWithHelp>
           <Input
             id={`hw-${print.id}`}
             type="number"
@@ -201,7 +250,12 @@ export function PrintEditor({
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor={`pkg-${print.id}`}>Packaging Cost</Label>
+          <LabelWithHelp
+            htmlFor={`pkg-${print.id}`}
+            tip="Flat add-on for boxes, mailers, or packing. No hourly rate."
+          >
+            Packaging Cost
+          </LabelWithHelp>
           <Input
             id={`pkg-${print.id}`}
             type="number"
@@ -217,7 +271,8 @@ export function PrintEditor({
         </div>
       </div>
 
-      {print.plates.filter((p) => p.sliced && p.imageDataUrl).length > 0 ? (
+      {print.technology === "fdm" &&
+      print.plates.filter((p) => p.sliced && p.imageDataUrl).length > 0 ? (
         <div className="flex flex-wrap gap-2">
           {print.plates
             .filter((p) => p.sliced && p.imageDataUrl)

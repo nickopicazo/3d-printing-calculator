@@ -3,13 +3,6 @@ import { Button } from "~/components/ui/button";
 import { Combobox } from "~/components/ui/combobox";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "~/components/ui/select";
 import type { InventoryMaterial } from "~/lib/calculator-types";
 import {
   createEmptyMaterial,
@@ -29,6 +22,8 @@ type Props = {
   onChange: (materials: MaterialLine[]) => void;
 };
 
+const INV_PREFIX = "inv:";
+
 function normalizeHex(color: string | null | undefined): string | null {
   if (!color) return null;
   const raw = color.trim();
@@ -45,6 +40,14 @@ function colorInputValue(color: string | null | undefined): string {
   return normalizeHex(color) ?? "#CCCCCC";
 }
 
+function inventoryOptionValue(id: string) {
+  return `${INV_PREFIX}${id}`;
+}
+
+function parseInventoryOption(value: string): string | null {
+  return value.startsWith(INV_PREFIX) ? value.slice(INV_PREFIX.length) : null;
+}
+
 export function MaterialsEditor({
   technology,
   materials,
@@ -58,6 +61,27 @@ export function MaterialsEditor({
   const priceLabel = technology === "sla" ? "Cost / L" : "Cost / kg";
   const kind = technology === "sla" ? "resin" : "filament";
   const inv = inventory.filter((m) => m.kind === kind);
+
+  const materialOptions = [
+    ...inv.map((i) => ({
+      value: inventoryOptionValue(i.id),
+      label: i.name,
+      keywords: [i.type, i.color].filter(Boolean).join(" "),
+    })),
+    ...presets
+      .filter(
+        (p) =>
+          !inv.some(
+            (i) =>
+              i.name.toLowerCase() === p.toLowerCase() ||
+              (i.type ?? "").toLowerCase() === p.toLowerCase(),
+          ),
+      )
+      .map((p) => ({
+        value: p,
+        label: p,
+      })),
+  ];
 
   function update(id: string, patch: Partial<MaterialLine>) {
     onChange(materials.map((m) => (m.id === id ? { ...m, ...patch } : m)));
@@ -79,10 +103,50 @@ export function MaterialsEditor({
     ]);
   }
 
+  function selectMaterial(lineId: string, value: string) {
+    const inventoryId = parseInventoryOption(value);
+    if (inventoryId) {
+      const found = inv.find((i) => i.id === inventoryId);
+      if (found) {
+        update(lineId, {
+          inventoryMaterialId: found.id,
+          label: found.name,
+          type: found.type,
+          color: found.color,
+          pricePerUnit: found.pricePerUnit,
+        });
+        return;
+      }
+    }
+    update(lineId, {
+      inventoryMaterialId: null,
+      type: value,
+      label: value,
+    });
+  }
+
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <Label>Materials</Label>
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <Label>Materials</Label>
+          {inv.length === 0 ? (
+            <p className="mt-0.5 text-xs text-[var(--color-ink-muted)]">
+              No saved {kind}. Pick a type or{" "}
+              <a
+                href="/materials"
+                className="font-semibold text-[var(--color-accent-deep)] hover:underline"
+              >
+                add inventory
+              </a>
+              .
+            </p>
+          ) : (
+            <p className="mt-0.5 text-xs text-[var(--color-ink-muted)]">
+              Search your inventory or type a custom material.
+            </p>
+          )}
+        </div>
         <Button type="button" size="sm" variant="secondary" onClick={add}>
           <Plus />
           Add Material
@@ -90,6 +154,10 @@ export function MaterialsEditor({
       </div>
       {materials.map((line) => {
         const hex = normalizeHex(line.color);
+        const selectedValue = line.inventoryMaterialId
+          ? inventoryOptionValue(line.inventoryMaterialId)
+          : line.type || line.label;
+
         return (
           <div
             key={line.id}
@@ -98,78 +166,21 @@ export function MaterialsEditor({
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
               <div className="min-w-0 flex-[1.4] space-y-1.5">
                 <Label className="text-xs">Material</Label>
-                {inv.length > 0 ? (
-                  <Select
-                    value={line.inventoryMaterialId ?? "custom"}
-                    onValueChange={(v) => {
-                      if (v === "custom") {
-                        update(line.id, { inventoryMaterialId: null });
-                        return;
-                      }
-                      const found = inv.find((i) => i.id === v);
-                      if (found) {
-                        update(line.id, {
-                          inventoryMaterialId: found.id,
-                          label: found.name,
-                          type: found.type,
-                          color: found.color,
-                          pricePerUnit: found.pricePerUnit,
-                        });
-                      }
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Pick Material" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="custom">Custom</SelectItem>
-                      {inv.map((i) => (
-                        <SelectItem key={i.id} value={i.id}>
-                          <span className="inline-flex items-center gap-2">
-                            {normalizeHex(i.color) ? (
-                              <span
-                                className="inline-block size-3 rounded-full ring-1 ring-black/10"
-                                style={{
-                                  backgroundColor: normalizeHex(i.color)!,
-                                }}
-                              />
-                            ) : null}
-                            {i.name}
-                          </span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <Combobox
-                    options={presets.map((p) => ({ value: p, label: p }))}
-                    value={line.type || line.label}
-                    onChange={(v) =>
-                      update(line.id, {
-                        type: v,
-                        label: v,
-                        inventoryMaterialId: null,
-                      })
-                    }
-                    placeholder="Material Type"
-                    allowCustom
-                  />
-                )}
-                {inv.length > 0 && !line.inventoryMaterialId ? (
-                  <Combobox
-                    options={presets.map((p) => ({ value: p, label: p }))}
-                    value={line.type || line.label}
-                    onChange={(v) =>
-                      update(line.id, {
-                        type: v,
-                        label: v,
-                        inventoryMaterialId: null,
-                      })
-                    }
-                    placeholder="Material Type"
-                    allowCustom
-                  />
-                ) : null}
+                <Combobox
+                  options={materialOptions}
+                  value={selectedValue}
+                  onChange={(v) => selectMaterial(line.id, v)}
+                  placeholder={
+                    inv.length > 0 ? "Pick From Inventory…" : "Material Type"
+                  }
+                  searchPlaceholder={
+                    inv.length > 0
+                      ? "Search inventory or type…"
+                      : "Search type…"
+                  }
+                  emptyText="No materials found."
+                  allowCustom
+                />
               </div>
 
               <div className="w-full space-y-1.5 sm:w-[9.5rem]">

@@ -61,7 +61,7 @@ export const verification = pgTable("verification", {
 });
 
 /** App tables */
-export const clients = pgTable("clients", {
+export const customers = pgTable("customers", {
   id: text("id").primaryKey(),
   userId: text("user_id")
     .notNull()
@@ -69,6 +69,7 @@ export const clients = pgTable("clients", {
   name: text("name").notNull(),
   email: text("email"),
   phone: text("phone"),
+  address: text("address"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -78,57 +79,86 @@ export const projects = pgTable("projects", {
   userId: text("user_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
-  clientId: text("client_id")
-    .notNull()
-    .references(() => clients.id, { onDelete: "cascade" }),
+  customerId: text("customer_id").references(() => customers.id, {
+    onDelete: "set null",
+  }),
   name: text("name").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-export const filaments = pgTable("filaments", {
+export const materials = pgTable("materials", {
   id: text("id").primaryKey(),
   userId: text("user_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
+  kind: text("kind").notNull().default("filament"), // filament | resin
   type: text("type"),
   color: text("color"),
-  pricePerKg: doublePrecision("price_per_kg").notNull(),
+  /** Price per kg (filament) or per litre (resin) */
+  pricePerUnit: doublePrecision("price_per_unit").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-export const quotes = pgTable("quotes", {
+export const prints = pgTable("prints", {
   id: text("id").primaryKey(),
+  projectId: text("project_id")
+    .notNull()
+    .references(() => projects.id, { onDelete: "cascade" }),
   userId: text("user_id")
     .notNull()
     .references(() => user.id, { onDelete: "cascade" }),
-  clientId: text("client_id").references(() => clients.id, {
-    onDelete: "set null",
-  }),
-  projectId: text("project_id").references(() => projects.id, {
-    onDelete: "set null",
-  }),
-  title: text("title").notNull(),
+  name: text("name").notNull(),
+  technology: text("technology").notNull().default("fdm"), // fdm | sla
+  printerName: text("printer_name"),
   sourceName: text("source_name"),
   printMinutes: integer("print_minutes").notNull().default(0),
-  materialCost: doublePrecision("material_cost").notNull(),
-  machineCost: doublePrecision("machine_cost").notNull(),
-  subtotal: doublePrecision("subtotal").notNull(),
-  markupAmount: doublePrecision("markup_amount").notNull(),
-  total: doublePrecision("total").notNull(),
-  settingsSnapshot: jsonb("settings_snapshot").notNull(),
-  metadataSnapshot: jsonb("metadata_snapshot").notNull(),
+  laborMinutes: integer("labor_minutes").notNull().default(0),
+  hardwareCost: doublePrecision("hardware_cost").notNull().default(0),
+  packagingCost: doublePrecision("packaging_cost").notNull().default(0),
+  materialCost: doublePrecision("material_cost").notNull().default(0),
+  electricityCost: doublePrecision("electricity_cost").notNull().default(0),
+  laborCost: doublePrecision("labor_cost").notNull().default(0),
+  machineCost: doublePrecision("machine_cost").notNull().default(0),
+  consumablesCost: doublePrecision("consumables_cost").notNull().default(0),
+  landed: doublePrecision("landed").notNull().default(0),
+  failureUplift: doublePrecision("failure_uplift").notNull().default(0),
+  markupAmount: doublePrecision("markup_amount").notNull().default(0),
+  preVat: doublePrecision("pre_vat").notNull().default(0),
+  vatAmount: doublePrecision("vat_amount").notNull().default(0),
+  total: doublePrecision("total").notNull().default(0),
+  sortOrder: integer("sort_order").notNull().default(0),
+  metadataSnapshot: jsonb("metadata_snapshot").notNull().default({}),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-export const quotePlates = pgTable("quote_plates", {
+export const printMaterials = pgTable("print_materials", {
   id: text("id").primaryKey(),
-  quoteId: text("quote_id")
+  printId: text("print_id")
     .notNull()
-    .references(() => quotes.id, { onDelete: "cascade" }),
+    .references(() => prints.id, { onDelete: "cascade" }),
+  inventoryMaterialId: text("inventory_material_id").references(
+    () => materials.id,
+    { onDelete: "set null" },
+  ),
+  label: text("label").notNull(),
+  unit: text("unit").notNull().default("g"), // g | ml
+  quantity: doublePrecision("quantity").notNull(),
+  pricePerUnit: doublePrecision("price_per_unit").notNull(),
+  slot: integer("slot"),
+  type: text("type"),
+  color: text("color"),
+  sortOrder: integer("sort_order").notNull().default(0),
+});
+
+export const printPlates = pgTable("print_plates", {
+  id: text("id").primaryKey(),
+  printId: text("print_id")
+    .notNull()
+    .references(() => prints.id, { onDelete: "cascade" }),
   plateIndex: integer("plate_index").notNull(),
   imagePath: text("image_path"),
   printMinutes: integer("print_minutes"),
@@ -136,80 +166,107 @@ export const quotePlates = pgTable("quote_plates", {
   metadata: jsonb("metadata").notNull().default({}),
 });
 
-export const quoteFilamentLines = pgTable("quote_filament_lines", {
+export const quotes = pgTable("quotes", {
   id: text("id").primaryKey(),
-  quoteId: text("quote_id")
+  userId: text("user_id")
     .notNull()
-    .references(() => quotes.id, { onDelete: "cascade" }),
-  plateId: text("plate_id").references(() => quotePlates.id, {
+    .references(() => user.id, { onDelete: "cascade" }),
+  customerId: text("customer_id").references(() => customers.id, {
     onDelete: "set null",
   }),
-  inventoryFilamentId: text("inventory_filament_id").references(
-    () => filaments.id,
-    { onDelete: "set null" },
-  ),
-  label: text("label").notNull(),
-  grams: doublePrecision("grams").notNull(),
-  pricePerKg: doublePrecision("price_per_kg").notNull(),
-  slot: integer("slot"),
-  type: text("type"),
-  color: text("color"),
-  sortOrder: integer("sort_order").notNull().default(0),
+  projectId: text("project_id").references(() => projects.id, {
+    onDelete: "set null",
+  }),
+  title: text("title").notNull(),
+  materialCost: doublePrecision("material_cost").notNull().default(0),
+  electricityCost: doublePrecision("electricity_cost").notNull().default(0),
+  laborCost: doublePrecision("labor_cost").notNull().default(0),
+  machineCost: doublePrecision("machine_cost").notNull().default(0),
+  hardwareCost: doublePrecision("hardware_cost").notNull().default(0),
+  packagingCost: doublePrecision("packaging_cost").notNull().default(0),
+  consumablesCost: doublePrecision("consumables_cost").notNull().default(0),
+  landed: doublePrecision("landed").notNull().default(0),
+  failureUplift: doublePrecision("failure_uplift").notNull().default(0),
+  markupAmount: doublePrecision("markup_amount").notNull().default(0),
+  preVat: doublePrecision("pre_vat").notNull().default(0),
+  vatAmount: doublePrecision("vat_amount").notNull().default(0),
+  vatRate: doublePrecision("vat_rate").notNull().default(0),
+  total: doublePrecision("total").notNull().default(0),
+  printMinutes: integer("print_minutes").notNull().default(0),
+  settingsSnapshot: jsonb("settings_snapshot").notNull().default({}),
+  printsSnapshot: jsonb("prints_snapshot").notNull().default([]),
+  customerSnapshot: jsonb("customer_snapshot").notNull().default({}),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
-export const clientsRelations = relations(clients, ({ one, many }) => ({
-  user: one(user, { fields: [clients.userId], references: [user.id] }),
+export const customersRelations = relations(customers, ({ one, many }) => ({
+  user: one(user, { fields: [customers.userId], references: [user.id] }),
   projects: many(projects),
   quotes: many(quotes),
 }));
 
 export const projectsRelations = relations(projects, ({ one, many }) => ({
-  client: one(clients, {
-    fields: [projects.clientId],
-    references: [clients.id],
+  customer: one(customers, {
+    fields: [projects.customerId],
+    references: [customers.id],
   }),
+  user: one(user, { fields: [projects.userId], references: [user.id] }),
+  prints: many(prints),
   quotes: many(quotes),
 }));
 
-export const quotesRelations = relations(quotes, ({ one, many }) => ({
+export const materialsRelations = relations(materials, ({ one }) => ({
+  user: one(user, { fields: [materials.userId], references: [user.id] }),
+}));
+
+export const printsRelations = relations(prints, ({ one, many }) => ({
+  project: one(projects, {
+    fields: [prints.projectId],
+    references: [projects.id],
+  }),
+  materials: many(printMaterials),
+  plates: many(printPlates),
+}));
+
+export const printMaterialsRelations = relations(printMaterials, ({ one }) => ({
+  print: one(prints, {
+    fields: [printMaterials.printId],
+    references: [prints.id],
+  }),
+  inventory: one(materials, {
+    fields: [printMaterials.inventoryMaterialId],
+    references: [materials.id],
+  }),
+}));
+
+export const printPlatesRelations = relations(printPlates, ({ one }) => ({
+  print: one(prints, {
+    fields: [printPlates.printId],
+    references: [prints.id],
+  }),
+}));
+
+export const quotesRelations = relations(quotes, ({ one }) => ({
   user: one(user, { fields: [quotes.userId], references: [user.id] }),
-  client: one(clients, {
-    fields: [quotes.clientId],
-    references: [clients.id],
+  customer: one(customers, {
+    fields: [quotes.customerId],
+    references: [customers.id],
   }),
   project: one(projects, {
     fields: [quotes.projectId],
     references: [projects.id],
   }),
-  plates: many(quotePlates),
-  filamentLines: many(quoteFilamentLines),
 }));
 
-export const quotePlatesRelations = relations(quotePlates, ({ one, many }) => ({
-  quote: one(quotes, {
-    fields: [quotePlates.quoteId],
-    references: [quotes.id],
-  }),
-  filamentLines: many(quoteFilamentLines),
-}));
-
-export const quoteFilamentLinesRelations = relations(
-  quoteFilamentLines,
-  ({ one }) => ({
-    quote: one(quotes, {
-      fields: [quoteFilamentLines.quoteId],
-      references: [quotes.id],
-    }),
-    plate: one(quotePlates, {
-      fields: [quoteFilamentLines.plateId],
-      references: [quotePlates.id],
-    }),
-  }),
-);
-
-export type Client = typeof clients.$inferSelect;
+export type Customer = typeof customers.$inferSelect;
 export type Project = typeof projects.$inferSelect;
-export type Filament = typeof filaments.$inferSelect;
+export type Material = typeof materials.$inferSelect;
+export type Print = typeof prints.$inferSelect;
+export type PrintMaterial = typeof printMaterials.$inferSelect;
+export type PrintPlate = typeof printPlates.$inferSelect;
 export type Quote = typeof quotes.$inferSelect;
-export type QuotePlate = typeof quotePlates.$inferSelect;
-export type QuoteFilamentLine = typeof quoteFilamentLines.$inferSelect;
+
+/** Legacy aliases during migration of call sites */
+export type Client = Customer;
+export type Filament = Material;

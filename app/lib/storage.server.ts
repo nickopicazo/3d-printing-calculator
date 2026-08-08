@@ -6,16 +6,16 @@ export function uploadRoot(): string {
 }
 
 export async function savePlateImage(args: {
-  quoteId: string;
+  ownerId: string;
   plateIndex: number;
   bytes: Buffer;
 }): Promise<string> {
-  const dir = path.join(uploadRoot(), args.quoteId);
+  const dir = path.join(uploadRoot(), args.ownerId);
   await mkdir(dir, { recursive: true });
   const filename = `plate_${args.plateIndex}.png`;
   const fullPath = path.join(dir, filename);
   await writeFile(fullPath, args.bytes);
-  return `${args.quoteId}/${filename}`;
+  return `${args.ownerId}/${filename}`;
 }
 
 export function resolveUploadPath(relativePath: string): string {

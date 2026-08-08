@@ -176,3 +176,13 @@ body > div {
 .btn-danger:hover:not(:disabled) {
   background: #fdf4f2;
 }
+
+@media print {
+  body::before {
+    display: none !important;
+  }
+  header {
+    display: none !important;
+  }
+}
+

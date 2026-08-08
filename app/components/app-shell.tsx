@@ -14,8 +14,8 @@ export type NavUser = {
 const links = [
   { to: "/", label: "Estimator" },
   { to: "/quotes", label: "Quotes", auth: true },
-  { to: "/filaments", label: "Filaments", auth: true },
-  { to: "/clients", label: "Clients", auth: true },
+  { to: "/materials", label: "Materials", auth: true },
+  { to: "/customers", label: "Customers", auth: true },
 ];
 
 export function AppShell({

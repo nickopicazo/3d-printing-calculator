@@ -45,7 +45,7 @@ export default function LoginPage() {
           </p>
           <CardTitle className="mt-2 text-3xl">Sign in</CardTitle>
           <CardDescription>
-            Use Google to save quotes, manage filaments, and keep client
+            Use Google to save quotes, manage materials, and keep customer
             projects organized.
           </CardDescription>
         </CardHeader>

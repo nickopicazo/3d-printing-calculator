@@ -7,4 +7,9 @@ export default defineConfig({
   resolve: {
     tsconfigPaths: true,
   },
+  build: {
+    cssMinify: true,
+    target: "es2022",
+    modulePreload: { polyfill: false },
+  },
 });

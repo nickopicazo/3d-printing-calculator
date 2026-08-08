@@ -106,13 +106,12 @@ export function PrintEditor({
               <input
                 type="file"
                 accept=".gcode,.3mf,.zip,.gcode.3mf,image/*"
-                multiple
                 className="sr-only"
                 disabled={uploading}
                 onChange={(e) => {
-                  const list = e.target.files;
-                  if (list && list.length > 0) {
-                    onUploadFiles(Array.from(list));
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    onUploadFiles([file]);
                   }
                   e.target.value = "";
                 }}

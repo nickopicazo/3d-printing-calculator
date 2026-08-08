@@ -1,0 +1,178 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Syne", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  --color-ink: #1a2332;
+  --color-ink-muted: #5c6b7a;
+  --color-paper: #f3f6f8;
+  --color-panel: #ffffff;
+  --color-line: #d5dee6;
+  --color-accent: #0d8f7c;
+  --color-accent-deep: #076b5d;
+  --color-warm: #c45c26;
+  --color-warn: #9a6700;
+}
+
+html,
+body {
+  min-height: 100%;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  background:
+    radial-gradient(ellipse 80% 50% at 10% -10%, #c8e8e2 0%, transparent 55%),
+    radial-gradient(ellipse 70% 45% at 100% 0%, #e8d5c4 0%, transparent 50%),
+    linear-gradient(180deg, #eef3f6 0%, #e4ebf0 100%);
+  background-attachment: fixed;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.35;
+  background-image: radial-gradient(
+    circle at 1px 1px,
+    rgba(26, 35, 50, 0.08) 1px,
+    transparent 0
+  );
+  background-size: 22px 22px;
+  z-index: 0;
+}
+
+#root,
+body > div {
+  position: relative;
+  z-index: 1;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-soft {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.45s ease-out both;
+}
+
+.animate-fade-up-delay {
+  animation: fade-up 0.55s ease-out 0.08s both;
+}
+
+.animate-fade-up-delay-2 {
+  animation: fade-up 0.55s ease-out 0.16s both;
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 1.4s ease-in-out infinite;
+}
+
+.field-input {
+  width: 100%;
+  border: 1px solid var(--color-line);
+  background: #fbfcfd;
+  border-radius: 0.5rem;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.95rem;
+  color: var(--color-ink);
+  outline: none;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.field-input:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(13, 143, 124, 0.18);
+}
+
+.field-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-ink-muted);
+  margin-bottom: 0.35rem;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border-radius: 0.55rem;
+  padding: 0.6rem 1rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition:
+    background 0.15s ease,
+    transform 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: var(--color-accent);
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--color-accent-deep);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--color-ink-muted);
+  border: 1px solid var(--color-line);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: rgba(26, 35, 50, 0.04);
+  color: var(--color-ink);
+}
+
+.btn-danger {
+  background: transparent;
+  color: #a33b2b;
+  border: 1px solid #e8c4be;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #fdf4f2;
+}

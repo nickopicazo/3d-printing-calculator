@@ -17,8 +17,21 @@ import { PrintEditor } from "~/components/calculator/print-editor";
 import { Combobox } from "~/components/ui/combobox";
 import { ConfirmDeleteDialog } from "~/components/ui/confirm-delete-dialog";
 import { Button } from "~/components/ui/button";
+import { LabelWithHelp } from "~/components/ui/field-help";
 import { Input } from "~/components/ui/input";
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+} from "~/components/ui/input-group";
 import { Label } from "~/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { db } from "~/db/index.server";
 import { customers, materials, projects } from "~/db/schema";
@@ -345,106 +358,151 @@ export default function Home() {
     }
   }
 
-  async function handleUpload(printId: string, file: File) {
+  async function applyFileToPrint(
+    file: File,
+    base: PrintDraft,
+  ): Promise<PrintDraft> {
+    if (file.type.startsWith("image/")) {
+      const { extractFromSlicerScreenshot } = await import("~/lib/ocr/runOcr");
+      const result = await extractFromSlicerScreenshot(file);
+      const hm = minutesToHoursMinutes(result.totalMinutes ?? 0);
+      const price =
+        base.technology === "sla"
+          ? settings.defaultResinPricePerLitre
+          : settings.defaultFilamentPricePerKg;
+      return {
+        ...base,
+        sourceName: file.name,
+        printHours: hm.hours,
+        printMinutesPart: hm.minutes,
+        materials:
+          result.filamentGrams.length > 0
+            ? result.filamentGrams.map((grams, i) => ({
+                id: createId("mat"),
+                label: `Imported ${i + 1}`,
+                quantity: grams,
+                unit: "g" as const,
+                pricePerUnit: price,
+                inventoryMaterialId: null,
+                slot: null,
+                type: null,
+                color: null,
+              }))
+            : base.materials,
+      };
+    }
+
+    const { extractFromGcodeUpload, isSupportedGcodeImport } = await import(
+      "~/lib/gcode/loadFromArchive"
+    );
+    if (!isSupportedGcodeImport(file)) {
+      throw new Error(`Unsupported file: ${file.name}`);
+    }
+    const result = await extractFromGcodeUpload(file);
+    const hm = minutesToHoursMinutes(result.totalMinutes ?? 0);
+    const plateMeta = result.metadataSnapshot.plates[0]?.metadata ?? {};
+    const printer =
+      (typeof plateMeta.printer_model === "string" &&
+      plateMeta.printer_model.trim()
+        ? plateMeta.printer_model.trim()
+        : null) ??
+      (typeof plateMeta.printer_model_id === "string" &&
+      plateMeta.printer_model_id.trim()
+        ? plateMeta.printer_model_id.trim()
+        : null) ??
+      "";
+    const price = settings.defaultFilamentPricePerKg;
+    const filamentInv = data.inventory.filter((m) => m.kind === "filament");
+    const materials =
+      result.filaments.length > 0
+        ? result.filaments.map((f) => {
+            const typeKey = (f.type || "").trim().toLowerCase();
+            const matched =
+              filamentInv.find(
+                (i) =>
+                  typeKey &&
+                  ((i.type ?? "").trim().toLowerCase() === typeKey ||
+                    i.name.trim().toLowerCase() === typeKey),
+              ) ??
+              filamentInv.find(
+                (i) => typeKey && i.name.toLowerCase().includes(typeKey),
+              ) ??
+              null;
+            return {
+              id: createId("mat"),
+              label: matched?.name || f.type || f.label || "Filament",
+              quantity: f.grams,
+              unit: "g" as const,
+              pricePerUnit: matched?.pricePerUnit ?? price,
+              inventoryMaterialId: matched?.id ?? null,
+              slot: f.slot ?? null,
+              type: matched?.type ?? f.type ?? null,
+              color: matched?.color ?? f.color ?? null,
+            };
+          })
+        : base.materials;
+
+    return {
+      ...base,
+      technology: "fdm",
+      sourceName: result.sourceName,
+      printerName: printer || base.printerName,
+      printHours: hm.hours,
+      printMinutesPart: hm.minutes,
+      materials,
+      plates: result.plates,
+      metadataSnapshot: result.metadataSnapshot as unknown as Record<
+        string,
+        unknown
+      >,
+    };
+  }
+
+  async function handleUploadFiles(printId: string, files: File[]) {
+    if (files.length === 0) return;
     setUploadPrintId(printId);
     setError(null);
+    setMessage(null);
+    setWarning(null);
     try {
-      if (file.type.startsWith("image/")) {
-        const { extractFromSlicerScreenshot } = await import("~/lib/ocr/runOcr");
-        const result = await extractFromSlicerScreenshot(file);
-        const hm = minutesToHoursMinutes(result.totalMinutes ?? 0);
-        setProject((prev) => ({
-          ...prev,
-          prints: prev.prints.map((p) => {
-            if (p.id !== printId) return p;
-            const price =
-              p.technology === "sla"
-                ? settings.defaultResinPricePerLitre
-                : settings.defaultFilamentPricePerKg;
-            return {
-              ...p,
-              name: p.name,
-              sourceName: file.name,
-              printHours: hm.hours,
-              printMinutesPart: hm.minutes,
-              materials:
-                result.filamentGrams.length > 0
-                  ? result.filamentGrams.map((grams, i) => ({
-                      id: createId("mat"),
-                      label: `Imported ${i + 1}`,
-                      quantity: grams,
-                      unit: "g" as const,
-                      pricePerUnit: price,
-                      inventoryMaterialId: null,
-                      slot: null,
-                      type: null,
-                      color: null,
-                    }))
-                  : p.materials,
-            };
-          }),
-        }));
-        setMessage("Imported values from slicer screenshot.");
-        return;
-      }
+      const current = project.prints.find((p) => p.id === printId);
+      if (!current) throw new Error("Print not found.");
 
-      const { extractFromGcodeUpload, isSupportedGcodeImport } = await import(
-        "~/lib/gcode/loadFromArchive"
-      );
-      if (!isSupportedGcodeImport(file)) {
-        throw new Error("Unsupported file type.");
+      const [first, ...rest] = files;
+      const updatedCurrent = await applyFileToPrint(first!, current);
+
+      const extras: PrintDraft[] = [];
+      let nameSeed = [
+        ...project.prints.map((p) =>
+          p.id === printId ? updatedCurrent : p,
+        ),
+      ];
+      for (const file of rest) {
+        const id = createId("print");
+        const name = nextPrintName(nameSeed);
+        const blank = {
+          ...emptyPrint(settings, "fdm", name),
+          id,
+          name,
+        };
+        const imported = await applyFileToPrint(file, blank);
+        extras.push(imported);
+        nameSeed = [...nameSeed, imported];
       }
-      const result = await extractFromGcodeUpload(file);
-      const hm = minutesToHoursMinutes(result.totalMinutes ?? 0);
-      const plateMeta = result.metadataSnapshot.plates[0]?.metadata ?? {};
-      const printer =
-        (typeof plateMeta.printer_model === "string" &&
-        plateMeta.printer_model.trim()
-          ? plateMeta.printer_model.trim()
-          : null) ??
-        (typeof plateMeta.printer_model_id === "string" &&
-        plateMeta.printer_model_id.trim()
-          ? plateMeta.printer_model_id.trim()
-          : null) ??
-        "";
 
       setProject((prev) => ({
         ...prev,
-        prints: prev.prints.map((p) => {
-          if (p.id !== printId) return p;
-          const price = settings.defaultFilamentPricePerKg;
-          const materials =
-            result.filaments.length > 0
-              ? result.filaments.map((f) => ({
-                  id: createId("mat"),
-                  label: f.type || f.label || "Filament",
-                  quantity: f.grams,
-                  unit: "g" as const,
-                  pricePerUnit: price,
-                  inventoryMaterialId: null,
-                  slot: f.slot ?? null,
-                  type: f.type ?? null,
-                  color: f.color ?? null,
-                }))
-              : p.materials;
-          return {
-            ...p,
-            technology: "fdm" as const,
-            name: p.name,
-            sourceName: result.sourceName,
-            printerName: printer || p.printerName,
-            printHours: hm.hours,
-            printMinutesPart: hm.minutes,
-            materials,
-            plates: result.plates,
-            metadataSnapshot: result.metadataSnapshot as unknown as Record<
-              string,
-              unknown
-            >,
-          };
-        }),
+        prints: [
+          ...prev.prints.map((p) => (p.id === printId ? updatedCurrent : p)),
+          ...extras,
+        ],
       }));
-      setMessage(null);
+      setActivePrintId(extras.at(-1)?.id ?? printId);
+      if (files.length > 1) {
+        setWarning(
+          `Imported ${files.length} files as ${files.length} prints.`,
+        );
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Import failed.");
     } finally {
@@ -608,6 +666,18 @@ export default function Home() {
     }
   }
 
+  function startNewProject() {
+    const nextSettings = loadSettings();
+    setSettings(nextSettings);
+    setProject(emptyProject(nextSettings));
+    setActivePrintId(null);
+    setMessage(null);
+    setWarning(null);
+    setError(null);
+    setFieldErrors({});
+    navigate("/", { replace: true });
+  }
+
   const firstName = data.user?.name?.split(" ")[0] ?? "there";
 
   return (
@@ -652,6 +722,17 @@ export default function Home() {
               <Link to="/login">Sign In to Save</Link>
             </Button>
           )}
+          {loggedIn && project.id ? (
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={busy}
+              onClick={startNewProject}
+            >
+              <Plus />
+              New Project
+            </Button>
+          ) : null}
           <Button
             type="button"
             variant="secondary"
@@ -755,7 +836,25 @@ export default function Home() {
             </div>
             <div className="grid gap-3 sm:grid-cols-3">
               <div className="space-y-1.5">
-                <Label htmlFor="machine-rate">Machine Rate / Hr</Label>
+                <LabelWithHelp
+                  htmlFor="machine-rate"
+                  tip="Needs print time on each print to affect cost."
+                  title="Machine Rate / Hr"
+                  details={
+                    <>
+                      <p>
+                        Machine cost = print hours × this rate. Leave at 0 to
+                        exclude machine time from the estimate.
+                      </p>
+                      <p>
+                        You can also set Printer Purchase Price and Lifespan in
+                        Advanced Settings, then Apply the suggested rate.
+                      </p>
+                    </>
+                  }
+                >
+                  Machine Rate / Hr
+                </LabelWithHelp>
                 <Input
                   id="machine-rate"
                   type="number"
@@ -770,22 +869,89 @@ export default function Home() {
                 />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="markup">Markup %</Label>
-                <Input
-                  id="markup"
-                  type="number"
-                  min={0}
-                  value={settings.markupPercent}
-                  onChange={(e) =>
-                    updateSettings({
-                      ...settings,
-                      markupPercent: Number(e.target.value) || 0,
-                    })
+                <LabelWithHelp
+                  htmlFor="service-fee"
+                  tip="Percent is per print; Fixed is once per project."
+                  title="Service Fee"
+                  details={
+                    <>
+                      <p>
+                        <strong className="font-semibold text-[var(--color-ink)]">
+                          Percent
+                        </strong>{" "}
+                        — markup on each print&apos;s landed cost + failure
+                        uplift.
+                      </p>
+                      <p>
+                        <strong className="font-semibold text-[var(--color-ink)]">
+                          Fixed
+                        </strong>{" "}
+                        — a flat fee added once at the project level (not per
+                        print).
+                      </p>
+                    </>
                   }
-                />
+                >
+                  Service Fee
+                </LabelWithHelp>
+                <InputGroup>
+                  <InputGroupInput
+                    id="service-fee"
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={settings.serviceFeeValue}
+                    onChange={(e) =>
+                      updateSettings({
+                        ...settings,
+                        serviceFeeValue: Math.max(
+                          0,
+                          Math.round(Number(e.target.value) || 0),
+                        ),
+                      })
+                    }
+                  />
+                  <InputGroupAddon align="inline-end" className="p-0 pr-0">
+                    <Select
+                      value={settings.serviceFeeMode}
+                      onValueChange={(value) =>
+                        updateSettings({
+                          ...settings,
+                          serviceFeeMode:
+                            value === "fixed" ? "fixed" : "percent",
+                        })
+                      }
+                    >
+                      <SelectTrigger
+                        aria-label="Service fee type"
+                        className="h-10 w-[7.25rem] rounded-none rounded-r-[0.7rem] border-0 border-l border-[var(--color-line)] bg-transparent shadow-none focus:border-[var(--color-line)] focus:shadow-none"
+                      >
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="percent">Percent</SelectItem>
+                        <SelectItem value="fixed">Fixed</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </InputGroupAddon>
+                </InputGroup>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="vat">VAT %</Label>
+                <LabelWithHelp
+                  htmlFor="vat"
+                  tip="Applied to the pre-VAT total (costs + fees)."
+                  title="VAT %"
+                  details={
+                    <p>
+                      VAT amount = pre-VAT total × (VAT % ÷ 100). Pre-VAT
+                      includes materials, electricity, labor, machine,
+                      hardware, packaging, consumables, failure uplift, and
+                      service fee.
+                    </p>
+                  }
+                >
+                  VAT %
+                </LabelWithHelp>
                 <Input
                   id="vat"
                   type="number"
@@ -807,6 +973,25 @@ export default function Home() {
               <h2 className="font-display text-2xl font-extrabold tracking-tight">
                 Prints
               </h2>
+              {message || warning || error ? (
+                <div className="space-y-2">
+                  {message ? (
+                    <p className="rounded-xl border border-[rgba(124,92,255,0.25)] bg-[rgba(124,92,255,0.08)] px-3 py-2 text-sm font-medium text-[var(--color-accent-deep)]">
+                      {message}
+                    </p>
+                  ) : null}
+                  {warning ? (
+                    <p className="rounded-xl border border-[#e8d9a8] bg-[#fffbeb] px-3 py-2 text-sm text-[#9a6700]">
+                      {warning}
+                    </p>
+                  ) : null}
+                  {error ? (
+                    <p className="rounded-xl border border-[#e8c4be] bg-[#fdf4f2] px-3 py-2 text-sm text-[#a33b2b]">
+                      {error}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
               <Tabs
                 value={activePrintId}
                 onValueChange={setActivePrintId}
@@ -876,9 +1061,9 @@ export default function Home() {
                           }
                         }}
                         onRemove={() => removePrint(print.id)}
-                        onUploadFile={
+                        onUploadFiles={
                           loggedIn
-                            ? (file) => handleUpload(print.id, file)
+                            ? (files) => handleUploadFiles(print.id, files)
                             : undefined
                         }
                       />
@@ -932,20 +1117,6 @@ export default function Home() {
                 : "Estimated Total"
             }
           />
-
-          {message ? (
-            <p className="text-sm font-medium text-[var(--color-accent-deep)]">
-              {message}
-            </p>
-          ) : null}
-          {warning ? (
-            <p className="rounded-xl border border-[#e8d9a8] bg-[#fffbeb] px-3 py-2 text-sm text-[#9a6700]">
-              {warning}
-            </p>
-          ) : null}
-          {error ? (
-            <p className="text-sm text-[#a33b2b]">{error}</p>
-          ) : null}
 
           {loggedIn && data.projects.length > 0 ? (
             <div className="dash-card text-sm">

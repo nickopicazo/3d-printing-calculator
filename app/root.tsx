@@ -10,6 +10,7 @@ import {
 
 import type { Route } from "./+types/root";
 import { AppShell } from "~/components/app-shell";
+import { GoogleAnalytics, GoogleAnalyticsPageViews } from "~/components/google-analytics";
 import { getSession } from "~/lib/session.server";
 import {
   SITE_DESCRIPTION,
@@ -73,6 +74,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
         <Links />
+        <GoogleAnalytics />
       </head>
       <body>
         {children}
@@ -87,6 +89,7 @@ export default function App() {
   const { user } = useLoaderData<typeof loader>();
   return (
     <AppShell user={user}>
+      <GoogleAnalyticsPageViews />
       <Outlet />
     </AppShell>
   );

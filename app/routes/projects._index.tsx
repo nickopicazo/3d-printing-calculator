@@ -1,7 +1,15 @@
-import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
-import { Link, useLoaderData, useSearchParams } from "react-router";
+import { and, asc, desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
+import { Box, Plus, Trash2 } from "lucide-react";
+import { useState } from "react";
+import {
+  Link,
+  useLoaderData,
+  useRevalidator,
+  useSearchParams,
+} from "react-router";
 import type { Route } from "./+types/projects._index";
 import { Button } from "~/components/ui/button";
+import { ConfirmDeleteDialog } from "~/components/ui/confirm-delete-dialog";
 import {
   Card,
   CardContent,
@@ -17,10 +25,11 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { db } from "~/db/index.server";
-import { customers, prints, projects } from "~/db/schema";
+import { customers, printPlates, prints, projects } from "~/db/schema";
 import { formatMoney } from "~/lib/pricing";
 import { requireUser } from "~/lib/session.server";
 import { DEFAULT_SETTINGS } from "~/lib/settings";
+
 
 export function meta({}: Route.MetaArgs) {
   return [{ title: "Projects · 3D Printing Calculator" }];
@@ -60,6 +69,33 @@ export async function loader({ request }: Route.LoaderArgs) {
           .groupBy(prints.projectId)
       : [];
 
+  const plateRows =
+    projectIds.length > 0
+      ? await db
+          .select({
+            projectId: prints.projectId,
+            imagePath: printPlates.imagePath,
+            plateIndex: printPlates.plateIndex,
+            printCreatedAt: prints.createdAt,
+          })
+          .from(printPlates)
+          .innerJoin(prints, eq(printPlates.printId, prints.id))
+          .where(
+            and(
+              inArray(prints.projectId, projectIds),
+              isNotNull(printPlates.imagePath),
+              eq(printPlates.sliced, true),
+            ),
+          )
+          .orderBy(asc(prints.createdAt), asc(printPlates.plateIndex))
+      : [];
+
+  const previewByProject = new Map<string, string>();
+  for (const row of plateRows) {
+    if (!row.imagePath || previewByProject.has(row.projectId)) continue;
+    previewByProject.set(row.projectId, row.imagePath);
+  }
+
   const aggByProject = new Map(printAgg.map((a) => [a.projectId, a]));
 
   const customerRows = await db
@@ -71,6 +107,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   return {
     projects: projectRows.map(({ project, customerName }) => {
       const agg = aggByProject.get(project.id);
+      const imagePath = previewByProject.get(project.id) ?? null;
       return {
         project,
         customerName,
@@ -78,6 +115,7 @@ export async function loader({ request }: Route.LoaderArgs) {
         materialCost: Number(agg?.materialCost ?? 0),
         printMinutes: Number(agg?.printMinutes ?? 0),
         printCount: Number(agg?.printCount ?? 0),
+        previewUrl: imagePath ? `/uploads/${imagePath}` : null,
       };
     }),
     customers: customerRows,
@@ -88,18 +126,76 @@ export async function loader({ request }: Route.LoaderArgs) {
 export default function ProjectsIndexPage() {
   const data = useLoaderData<typeof loader>();
   const [, setSearchParams] = useSearchParams();
-  const symbol = DEFAULT_SETTINGS.currencySymbol;
+  const revalidator = useRevalidator();
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const symbol = DEFAULT_SETTINGS.currencyCode;
+
+  async function deleteProject(id: string) {
+    setDeletingId(id);
+    setError(null);
+    try {
+      const res = await fetch("/api/projects", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(
+          typeof payload.error === "string" ? payload.error : "Delete failed.",
+        );
+      }
+      setPendingDelete(null);
+      revalidator.revalidate();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Delete failed.");
+    } finally {
+      setDeletingId(null);
+    }
+  }
 
   return (
     <main className="page-shell">
-      <header className="mb-8 animate-fade-up">
-        <h1 className="font-display text-3xl font-extrabold">Projects</h1>
-        <p className="mt-2 text-[var(--color-ink-muted)]">
-          Saved work you can reopen, edit, and invoice.
-        </p>
+      <ConfirmDeleteDialog
+        open={pendingDelete != null}
+        description={
+          pendingDelete
+            ? `Delete “${pendingDelete.name}”? This cannot be undone.`
+            : ""
+        }
+        confirming={deletingId != null}
+        onOpenChange={(open) => {
+          if (!open && deletingId == null) setPendingDelete(null);
+        }}
+        onConfirm={() => {
+          if (pendingDelete) void deleteProject(pendingDelete.id);
+        }}
+      />
+      <header className="mb-8 flex flex-wrap items-end justify-between gap-4 animate-fade-up">
+        <div>
+          <h1 className="font-display text-3xl font-extrabold">Projects</h1>
+          <p className="mt-2 text-[var(--color-ink-muted)]">
+            Saved work you can reopen, edit, and invoice.
+          </p>
+        </div>
+        <Button asChild>
+          <Link to="/?new=1">
+            <Plus />
+            Add New Project
+          </Link>
+        </Button>
       </header>
 
-      <div className="mb-6">
+      {error ? (
+        <p className="mb-4 text-sm text-[#a33b2b]">{error}</p>
+      ) : null}
+
+      <div className="mb-6 max-w-sm">
         <p className="field-label">Customer</p>
         <Select
           value={data.filters.customerId ?? "all"}
@@ -113,10 +209,10 @@ export default function ProjectsIndexPage() {
           }}
         >
           <SelectTrigger>
-            <SelectValue placeholder="All customers" />
+            <SelectValue placeholder="All Customers" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All customers</SelectItem>
+            <SelectItem value="all">All Customers</SelectItem>
             {data.customers.map((c) => (
               <SelectItem key={c.id} value={c.id}>
                 {c.name}
@@ -128,42 +224,69 @@ export default function ProjectsIndexPage() {
 
       <div className="grid gap-4 sm:grid-cols-2">
         {data.projects.length === 0 ? (
-          <p className="text-sm text-[var(--color-ink-muted)] sm:col-span-2">
-            No projects yet. Open the{" "}
-            <Link
-              to="/"
-              className="text-[var(--color-accent-deep)] hover:underline"
-            >
-              Calculator
-            </Link>
-            , then click{" "}
-            <span className="font-medium text-[var(--color-ink)]">
-              Save project
-            </span>
-            .
-          </p>
+          <div className="sm:col-span-2 space-y-3">
+            <p className="text-sm text-[var(--color-ink-muted)]">
+              No projects yet. Start a quote in the calculator, then save it.
+            </p>
+            <Button asChild>
+              <Link to="/?new=1">
+                <Plus />
+                Add New Project
+              </Link>
+            </Button>
+          </div>
         ) : (
           data.projects.map(
-            ({ project, customerName, total, materialCost, printMinutes, printCount }) => (
+            ({
+              project,
+              customerName,
+              total,
+              materialCost,
+              printMinutes,
+              printCount,
+              previewUrl,
+            }) => (
               <Card
                 key={project.id}
-                className="transition-shadow hover:shadow-[0_16px_40px_rgba(22,22,26,0.08)]"
+                className="overflow-hidden transition-shadow hover:shadow-[0_16px_40px_rgba(22,22,26,0.08)]"
               >
                 <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <CardTitle className="text-lg">
-                        <Link to={`/?projectId=${project.id}`}>{project.name}</Link>
-                      </CardTitle>
-                      <CardDescription>
-                        {customerName || "No customer"}
-                        {" · "}
-                        {new Date(project.updatedAt).toLocaleString()}
-                      </CardDescription>
+                  <div className="flex items-start gap-4">
+                    <Link
+                      to={`/?projectId=${project.id}`}
+                      className="relative size-20 shrink-0 overflow-hidden rounded-2xl bg-[var(--color-paper)] ring-1 ring-[var(--color-line)]"
+                    >
+                      {previewUrl ? (
+                        <img
+                          src={previewUrl}
+                          alt=""
+                          className="size-full object-cover"
+                        />
+                      ) : (
+                        <span className="flex size-full items-center justify-center text-[var(--color-ink-muted)]">
+                          <Box className="size-7 opacity-50" />
+                        </span>
+                      )}
+                    </Link>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <CardTitle className="truncate text-lg">
+                            <Link to={`/?projectId=${project.id}`}>
+                              {project.name}
+                            </Link>
+                          </CardTitle>
+                          <CardDescription>
+                            {customerName || "No customer"}
+                            {" · "}
+                            {new Date(project.updatedAt).toLocaleString()}
+                          </CardDescription>
+                        </div>
+                        <p className="shrink-0 font-display text-xl font-extrabold text-[var(--color-accent-deep)]">
+                          {formatMoney(total, symbol)}
+                        </p>
+                      </div>
                     </div>
-                    <p className="font-display text-xl font-extrabold text-[var(--color-accent-deep)]">
-                      {formatMoney(total, symbol)}
-                    </p>
                   </div>
                 </CardHeader>
                 <CardContent className="flex flex-wrap items-center justify-between gap-2">
@@ -180,6 +303,21 @@ export default function ProjectsIndexPage() {
                       <Link to={`/projects/${project.id}/invoice`}>
                         Download PDF
                       </Link>
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="destructive"
+                      disabled={deletingId === project.id}
+                      onClick={() =>
+                        setPendingDelete({
+                          id: project.id,
+                          name: project.name,
+                        })
+                      }
+                    >
+                      <Trash2 />
+                      Delete
                     </Button>
                   </div>
                 </CardContent>

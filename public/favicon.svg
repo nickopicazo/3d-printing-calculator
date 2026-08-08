@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <rect width="512" height="512" rx="110" fill="#0F172A"/>
+  <!-- Isometric Layer Cube / Calculator Base -->
+  <path d="M256 80 L416 160 L256 240 L96 160 Z" fill="#06B6D4"/>
+  <path d="M96 160 L256 240 L256 400 L96 320 Z" fill="#0891B2"/>
+  <path d="M416 160 L256 240 L256 400 L416 320 Z" fill="#0284C7"/>
+  <!-- Calculator Screen Grid overlay on Front Face -->
+  <polygon points="280,260 390,205 390,230 280,285" fill="#10B981" opacity="0.9"/>
+  <!-- Layer Lines -->
+  <line x1="96" y1="213" x2="256" y2="293" stroke="#38BDF8" stroke-width="4" opacity="0.6"/>
+  <line x1="96" y1="266" x2="256" y2="346" stroke="#38BDF8" stroke-width="4" opacity="0.6"/>
+  <!-- 3D Printer Nozzle -->
+  <path d="M236 40 L276 40 L266 75 L246 75 Z" fill="#F59E0B"/>
+  <circle cx="256" cy="78" r="4" fill="#EF4444"/>
+</svg>

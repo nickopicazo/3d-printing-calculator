@@ -418,16 +418,13 @@ export default function Home() {
         ? result.filaments.map((f) => {
             const typeKey = (f.type || "").trim().toLowerCase();
             const matched =
-              filamentInv.find(
-                (i) =>
-                  typeKey &&
-                  ((i.type ?? "").trim().toLowerCase() === typeKey ||
-                    i.name.trim().toLowerCase() === typeKey),
-              ) ??
-              filamentInv.find(
-                (i) => typeKey && i.name.toLowerCase().includes(typeKey),
-              ) ??
-              null;
+              typeKey
+                ? filamentInv.find(
+                    (i) =>
+                      (i.type ?? "").trim().toLowerCase() === typeKey ||
+                      i.name.trim().toLowerCase() === typeKey,
+                  ) ?? null
+                : null;
             return {
               id: createId("mat"),
               label: matched?.name || f.type || f.label || "Filament",

@@ -240,6 +240,7 @@ export function PrintEditor({
         materials={print.materials}
         inventory={inventory}
         defaultPrice={defaultPrice}
+        currencySymbol={settings.currencySymbol}
         onChange={(materials) => onChange({ ...print, materials })}
       />
 
@@ -279,6 +280,7 @@ export function PrintEditor({
 
       <AddonsEditor
         addons={print.addons}
+        currencySymbol={settings.currencySymbol}
         onChange={(addons) => onChange({ ...print, addons })}
       />
 

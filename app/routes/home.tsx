@@ -23,8 +23,10 @@ import {
   InputGroup,
   InputGroupAddon,
   InputGroupInput,
+  InputGroupText,
 } from "~/components/ui/input-group";
 import { Label } from "~/components/ui/label";
+import { MoneyInput } from "~/components/ui/money-input";
 import {
   Select,
   SelectContent,
@@ -889,10 +891,9 @@ export default function Home() {
                 >
                   Machine Rate / Hr
                 </LabelWithHelp>
-                <Input
+                <MoneyInput
                   id="machine-rate"
-                  type="number"
-                  min={0}
+                  currencySymbol={settings.currencySymbol}
                   value={settings.machineRatePerHour}
                   onChange={(e) =>
                     updateSettings({
@@ -929,6 +930,13 @@ export default function Home() {
                   Service Fee
                 </LabelWithHelp>
                 <InputGroup>
+                  {settings.serviceFeeMode === "fixed" ? (
+                    <InputGroupAddon align="inline-start">
+                      <InputGroupText aria-hidden>
+                        {settings.currencySymbol}
+                      </InputGroupText>
+                    </InputGroupAddon>
+                  ) : null}
                   <InputGroupInput
                     id="service-fee"
                     type="number"

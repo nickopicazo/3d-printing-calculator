@@ -5,6 +5,7 @@ import { Combobox } from "~/components/ui/combobox";
 import { ConfirmDeleteDialog } from "~/components/ui/confirm-delete-dialog";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import { MoneyInput } from "~/components/ui/money-input";
 import type { InventoryMaterial } from "~/lib/calculator-types";
 import {
   createEmptyMaterial,
@@ -21,6 +22,7 @@ type Props = {
   materials: MaterialLine[];
   inventory: InventoryMaterial[];
   defaultPrice: number;
+  currencySymbol: string;
   onChange: (materials: MaterialLine[]) => void;
 };
 
@@ -55,6 +57,7 @@ export function MaterialsEditor({
   materials,
   inventory,
   defaultPrice,
+  currencySymbol,
   onChange,
 }: Props) {
   const [pendingDelete, setPendingDelete] = useState<{
@@ -261,14 +264,13 @@ export function MaterialsEditor({
                 </div>
               </div>
 
-              <div className="w-full space-y-1.5 sm:w-28">
+              <div className="w-full space-y-1.5 sm:w-32">
                 <Label htmlFor={priceId} className="text-xs">
                   {priceLabel}
                 </Label>
-                <Input
+                <MoneyInput
                   id={priceId}
-                  type="number"
-                  min={0}
+                  currencySymbol={currencySymbol}
                   value={line.pricePerUnit}
                   onChange={(e) =>
                     update(line.id, {

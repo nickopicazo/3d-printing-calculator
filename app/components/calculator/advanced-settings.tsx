@@ -8,6 +8,7 @@ import {
 } from "~/components/ui/collapsible";
 import { LabelWithHelp } from "~/components/ui/field-help";
 import { Input } from "~/components/ui/input";
+import { MoneyInput } from "~/components/ui/money-input";
 import {
   suggestedMachineRate,
   type AppSettings,
@@ -102,11 +103,9 @@ export function AdvancedSettingsPanel({ settings, onChange, showSla }: Props) {
             >
               Electricity / kWh
             </LabelWithHelp>
-            <Input
+            <MoneyInput
               id="kwh"
-              type="number"
-              min={0}
-              step="0.01"
+              currencySymbol={settings.currencySymbol}
               value={settings.electricityPerKwh}
               onChange={(e) =>
                 set("electricityPerKwh", Number(e.target.value) || 0)
@@ -133,10 +132,9 @@ export function AdvancedSettingsPanel({ settings, onChange, showSla }: Props) {
             >
               Labor Rate / Hour
             </LabelWithHelp>
-            <Input
+            <MoneyInput
               id="labor-rate"
-              type="number"
-              min={0}
+              currencySymbol={settings.currencySymbol}
               value={settings.laborRatePerHour}
               onChange={(e) =>
                 set("laborRatePerHour", Number(e.target.value) || 0)
@@ -182,10 +180,9 @@ export function AdvancedSettingsPanel({ settings, onChange, showSla }: Props) {
             >
               Printer Purchase Price
             </LabelWithHelp>
-            <Input
+            <MoneyInput
               id="purchase"
-              type="number"
-              min={0}
+              currencySymbol={settings.currencySymbol}
               value={settings.printerPurchasePrice}
               onChange={(e) =>
                 set("printerPurchasePrice", Number(e.target.value) || 0)
@@ -251,10 +248,9 @@ export function AdvancedSettingsPanel({ settings, onChange, showSla }: Props) {
               >
                 SLA Consumables / Print
               </LabelWithHelp>
-              <Input
+              <MoneyInput
                 id="sla-consumables"
-                type="number"
-                min={0}
+                currencySymbol={settings.currencySymbol}
                 value={settings.slaConsumablesPerPrint}
                 onChange={(e) =>
                   set("slaConsumablesPerPrint", Number(e.target.value) || 0)

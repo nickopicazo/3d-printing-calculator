@@ -4,6 +4,7 @@ import { Button } from "~/components/ui/button";
 import { ConfirmDeleteDialog } from "~/components/ui/confirm-delete-dialog";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import { MoneyInput } from "~/components/ui/money-input";
 import {
   createEmptyAddon,
   type AddonLine,
@@ -11,10 +12,15 @@ import {
 
 type Props = {
   addons: AddonLine[];
+  currencySymbol: string;
   onChange: (addons: AddonLine[]) => void;
 };
 
-export function AddonsEditor({ addons, onChange }: Props) {
+export function AddonsEditor({
+  addons,
+  currencySymbol,
+  onChange,
+}: Props) {
   const [pendingDelete, setPendingDelete] = useState<{
     id: string;
     name: string;
@@ -78,7 +84,7 @@ export function AddonsEditor({ addons, onChange }: Props) {
                 Qty
               </span>
             </div>
-            <div className="w-24 shrink-0">
+            <div className="w-28 shrink-0">
               <span className="text-xs font-medium text-[var(--color-ink-muted)]">
                 Cost
               </span>
@@ -120,15 +126,13 @@ export function AddonsEditor({ addons, onChange }: Props) {
                     }
                   />
                 </div>
-                <div className="w-[calc(50%-1.75rem)] space-y-1 sm:w-24 sm:shrink-0 sm:space-y-0">
+                <div className="w-[calc(50%-1.75rem)] space-y-1 sm:w-28 sm:shrink-0 sm:space-y-0">
                   <Label htmlFor={costId} className="text-xs sm:sr-only">
                     Cost
                   </Label>
-                  <Input
+                  <MoneyInput
                     id={costId}
-                    type="number"
-                    min={0}
-                    step="0.01"
+                    currencySymbol={currencySymbol}
                     value={line.unitCost}
                     onChange={(e) =>
                       update(line.id, { unitCost: Number(e.target.value) || 0 })

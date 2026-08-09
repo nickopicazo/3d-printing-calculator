@@ -21,6 +21,7 @@ import {
 } from "~/components/ui/dialog";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import { MoneyInput } from "~/components/ui/money-input";
 import {
   Select,
   SelectContent,
@@ -205,7 +206,8 @@ export default function MaterialsPage() {
     id: string;
     name: string;
   } | null>(null);
-  const currency = DEFAULT_SETTINGS.currencyCode;
+  const currencyCode = DEFAULT_SETTINGS.currencyCode;
+  const currencySymbol = DEFAULT_SETTINGS.currencySymbol;
   const createError =
     actionData && "createError" in actionData && actionData.createError
       ? actionData.createError
@@ -276,12 +278,10 @@ export default function MaterialsPage() {
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="pricePerUnit">Price / Unit</Label>
-                <Input
+                <MoneyInput
                   id="pricePerUnit"
                   name="pricePerUnit"
-                  type="number"
-                  step="0.01"
-                  min="0"
+                  currencySymbol={currencySymbol}
                   required
                   placeholder="750"
                 />
@@ -408,12 +408,10 @@ export default function MaterialsPage() {
                           <Label htmlFor={`price-${row.id}`}>
                             Price / {unit}
                           </Label>
-                          <Input
+                          <MoneyInput
                             id={`price-${row.id}`}
                             name="pricePerUnit"
-                            type="number"
-                            step="0.01"
-                            min="0"
+                            currencySymbol={currencySymbol}
                             defaultValue={row.pricePerUnit}
                             required
                           />
@@ -464,7 +462,7 @@ export default function MaterialsPage() {
                             </p>
                           </div>
                           <p className="shrink-0 font-display text-lg font-extrabold tabular-nums text-[var(--color-accent-deep)]">
-                            {formatMoney(row.pricePerUnit, currency)}
+                            {formatMoney(row.pricePerUnit, currencyCode)}
                             <span className="ml-1 text-xs font-semibold text-[var(--color-ink-muted)]">
                               /{unit}
                             </span>

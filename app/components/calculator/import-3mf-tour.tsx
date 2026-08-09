@@ -14,7 +14,7 @@ import { Separator } from "~/components/ui/separator";
 import { withSignInSearch } from "~/lib/sign-in";
 
 /** Bump when tour content changes so returning users see updates once. */
-const STORAGE_KEY = "3dce-import-3mf-tour-v1";
+const STORAGE_KEY = "3dce-import-3mf-tour-v2";
 
 type Import3mfTourProps = {
   open: boolean;
@@ -104,7 +104,7 @@ export function Import3mfTour({
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
-        className="flex max-w-2xl flex-col gap-0 overflow-hidden p-0"
+        className="flex max-w-2xl flex-col gap-0 overflow-hidden p-0 sm:p-0"
         style={{
           maxHeight: "min(90dvh, 52rem)",
           overflowY: "hidden",
@@ -221,10 +221,10 @@ export function Import3mfTour({
                 sliced export for full auto-fill.
               </p>
               <TutorialScreenshot
-                // src="/tutorial/bambu-save-project-as.png"
-                alt="Bambu Studio File menu showing Save Project As"
+                src="/tutorial/bambu-save-project-as.png"
+                alt="Bambu Studio File menu with Save Project As highlighted"
                 label="File → Save Project As"
-                caption="Placeholder for a screenshot of Save Project As in Bambu Studio."
+                caption="File → Save Project As (⇧⌘S) saves a project .3mf."
               />
             </section>
 
@@ -241,17 +241,16 @@ export function Import3mfTour({
                   correctly.
                 </li>
                 <li>
-                  Click the orange{" "}
+                  Click{" "}
                   <strong className="font-semibold text-[var(--color-ink)]">
-                    Slice Plate
+                    Slice plate
                   </strong>{" "}
-                  button on the right side.
+                  (use the dropdown for Slice all if you have multiple plates).
                 </li>
                 <li>
-                  Once slicing finishes, click the small dropdown arrow or icon
-                  next to{" "}
+                  Once slicing finishes, open the dropdown next to{" "}
                   <strong className="font-semibold text-[var(--color-ink)]">
-                    Print plate / Send
+                    Print plate
                   </strong>
                   .
                 </li>
@@ -260,7 +259,7 @@ export function Import3mfTour({
                   <strong className="font-semibold text-[var(--color-ink)]">
                     Export plate sliced file
                   </strong>{" "}
-                  (or Export G-code file).
+                  (or Export all sliced file).
                 </li>
                 <li>
                   Save the{" "}
@@ -280,23 +279,23 @@ export function Import3mfTour({
               </p>
               <div className="grid gap-3 sm:grid-cols-2">
                 <TutorialScreenshot
-                  // src="/tutorial/bambu-slice-plate.png"
-                  alt="Bambu Studio Slice Plate button"
-                  label="Slice Plate"
-                  caption="Placeholder: Slice Plate on the right panel."
+                  src="/tutorial/bambu-slice-plate.png"
+                  alt="Bambu Studio Slice plate dropdown showing Slice all and Slice plate"
+                  label="Slice plate"
+                  caption="Slice plate — or Slice all for every plate in the project."
                 />
                 <TutorialScreenshot
-                  // src="/tutorial/bambu-export-sliced.png"
-                  alt="Bambu Studio Export plate sliced file menu"
+                  src="/tutorial/bambu-export-sliced.png"
+                  alt="Bambu Studio Print plate menu with Export plate sliced file highlighted"
                   label="Export plate sliced file"
-                  caption="Placeholder: dropdown next to Print plate / Send."
+                  caption="After slicing: Print plate dropdown → Export plate sliced file."
                 />
               </div>
             </section>
           </div>
         </div>
 
-        <DialogFooter className="shrink-0 border-t border-[var(--color-line)] bg-[var(--color-panel)] p-4 sm:p-5">
+        <DialogFooter className="shrink-0 border-t border-[var(--color-line)] bg-[var(--color-panel)] px-5 py-3 sm:px-6 sm:py-4">
           {!loggedIn ? (
             <>
               <Button

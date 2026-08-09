@@ -18,6 +18,7 @@ import {
   CardHeader,
   CardTitle,
 } from "~/components/ui/card";
+import { ConfirmDeleteDialog } from "~/components/ui/confirm-delete-dialog";
 import {
   Dialog,
   DialogContent,
@@ -127,6 +128,10 @@ export default function CustomersPage() {
   const navigation = useNavigation();
   const busy = navigation.state !== "idle";
   const [addOpen, setAddOpen] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const createError =
     actionData && "createError" in actionData && actionData.createError
       ? actionData.createError
@@ -139,6 +144,27 @@ export default function CustomersPage() {
   return (
     <main className="page-shell">
       <div className="mx-auto max-w-5xl">
+        <ConfirmDeleteDialog
+          open={pendingDelete != null}
+          title="Delete Customer"
+          description={
+            pendingDelete
+              ? `Delete “${pendingDelete.name}”? This cannot be undone.`
+              : ""
+          }
+          confirming={busy && pendingDelete != null}
+          onOpenChange={(open) => {
+            if (!open && !busy) setPendingDelete(null);
+          }}
+          onConfirm={() => {
+            if (!pendingDelete) return;
+            const form = document.getElementById(
+              `delete-customer-${pendingDelete.id}`,
+            ) as HTMLFormElement | null;
+            form?.requestSubmit();
+          }}
+        />
+
         <Dialog open={addOpen} onOpenChange={setAddOpen}>
           <DialogContent className="max-w-lg">
             <DialogHeader>
@@ -231,17 +257,31 @@ export default function CustomersPage() {
                         {customer.projects.length === 1 ? "" : "s"}
                       </CardDescription>
                     </div>
-                    <Form method="post">
+                    <Form
+                      method="post"
+                      id={`delete-customer-${customer.id}`}
+                      className="hidden"
+                    >
                       <input
                         type="hidden"
                         name="intent"
                         value="delete-customer"
                       />
                       <input type="hidden" name="id" value={customer.id} />
-                      <Button type="submit" variant="destructive" size="sm">
-                        Delete
-                      </Button>
                     </Form>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      onClick={() =>
+                        setPendingDelete({
+                          id: customer.id,
+                          name: customer.name,
+                        })
+                      }
+                    >
+                      Delete
+                    </Button>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">

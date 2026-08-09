@@ -167,6 +167,7 @@ export default function ProjectsIndexPage() {
     <main className="page-shell">
       <ConfirmDeleteDialog
         open={pendingDelete != null}
+        title="Delete Project"
         description={
           pendingDelete
             ? `Delete “${pendingDelete.name}”? This cannot be undone.`

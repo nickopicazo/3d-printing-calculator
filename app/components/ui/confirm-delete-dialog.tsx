@@ -14,16 +14,18 @@ type ConfirmDeleteDialogProps = {
   description: string;
   confirming?: boolean;
   confirmLabel?: string;
+  confirmingLabel?: string;
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
 };
 
 export function ConfirmDeleteDialog({
   open,
-  title = "Delete Project",
+  title = "Confirm Delete",
   description,
   confirming = false,
   confirmLabel = "Delete",
+  confirmingLabel = "Deleting…",
   onOpenChange,
   onConfirm,
 }: ConfirmDeleteDialogProps) {
@@ -49,7 +51,7 @@ export function ConfirmDeleteDialog({
             disabled={confirming}
             onClick={onConfirm}
           >
-            {confirming ? "Deleting…" : confirmLabel}
+            {confirming ? confirmingLabel : confirmLabel}
           </Button>
         </DialogFooter>
       </DialogContent>

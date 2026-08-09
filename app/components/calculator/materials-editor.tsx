@@ -1,6 +1,8 @@
 import { Plus, Trash2 } from "lucide-react";
+import { useState } from "react";
 import { Button } from "~/components/ui/button";
 import { Combobox } from "~/components/ui/combobox";
+import { ConfirmDeleteDialog } from "~/components/ui/confirm-delete-dialog";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import type { InventoryMaterial } from "~/lib/calculator-types";
@@ -55,6 +57,10 @@ export function MaterialsEditor({
   defaultPrice,
   onChange,
 }: Props) {
+  const [pendingDelete, setPendingDelete] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const presets =
     technology === "sla" ? [...SLA_MATERIALS] : [...FDM_MATERIALS];
   const unitLabel = technology === "sla" ? "ml" : "g";
@@ -127,6 +133,26 @@ export function MaterialsEditor({
 
   return (
     <div className="space-y-3">
+      <ConfirmDeleteDialog
+        open={pendingDelete != null}
+        title="Remove Material"
+        description={
+          pendingDelete
+            ? `Remove “${pendingDelete.name || "this material"}”?`
+            : ""
+        }
+        confirmLabel="Remove"
+        confirmingLabel="Removing…"
+        onOpenChange={(open) => {
+          if (!open) setPendingDelete(null);
+        }}
+        onConfirm={() => {
+          if (!pendingDelete) return;
+          remove(pendingDelete.id);
+          setPendingDelete(null);
+        }}
+      />
+
       <div>
         <Label>Materials</Label>
         {inv.length === 0 ? (
@@ -274,7 +300,12 @@ export function MaterialsEditor({
                 variant="destructive"
                 size="icon"
                 disabled={materials.length <= 1}
-                onClick={() => remove(line.id)}
+                onClick={() =>
+                  setPendingDelete({
+                    id: line.id,
+                    name: (line.label || line.type).trim(),
+                  })
+                }
                 aria-label="Remove Material"
                 className="shrink-0 self-end"
               >

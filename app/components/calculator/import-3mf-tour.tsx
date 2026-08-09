@@ -1,6 +1,6 @@
 import { ImageIcon, LogIn, Sparkles, Upload } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link } from "react-router";
+import { Link, useLocation } from "react-router";
 import { Button } from "~/components/ui/button";
 import {
   Dialog,
@@ -11,6 +11,7 @@ import {
   DialogTitle,
 } from "~/components/ui/dialog";
 import { Separator } from "~/components/ui/separator";
+import { withSignInSearch } from "~/lib/sign-in";
 
 /** Bump when tour content changes so returning users see updates once. */
 const STORAGE_KEY = "3dce-import-3mf-tour-v1";
@@ -93,6 +94,8 @@ export function Import3mfTour({
   loggedIn = false,
   onOpenChange,
 }: Import3mfTourProps) {
+  const location = useLocation();
+
   function handleOpenChange(next: boolean) {
     if (!next) markImport3mfTourSeen();
     onOpenChange(next);
@@ -304,7 +307,10 @@ export function Import3mfTour({
                 Maybe later
               </Button>
               <Button asChild>
-                <Link to="/login" onClick={() => handleOpenChange(false)}>
+                <Link
+                  to={{ search: withSignInSearch(location.search) }}
+                  onClick={() => handleOpenChange(false)}
+                >
                   <LogIn />
                   Sign in to upload
                 </Link>

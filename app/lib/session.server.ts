@@ -1,5 +1,6 @@
 import { redirect } from "react-router";
 import { auth } from "./auth.server";
+import { signInLocation } from "./sign-in";
 
 export async function getSession(request: Request) {
   try {
@@ -13,7 +14,7 @@ export async function getSession(request: Request) {
 export async function requireUser(request: Request) {
   const session = await getSession(request);
   if (!session?.user) {
-    throw redirect(`/login?redirectTo=${encodeURIComponent(new URL(request.url).pathname)}`);
+    throw redirect(signInLocation(new URL(request.url).pathname));
   }
   return session;
 }

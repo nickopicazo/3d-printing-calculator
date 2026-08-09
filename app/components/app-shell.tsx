@@ -1,6 +1,8 @@
 import { Form, Link, useLocation } from "react-router";
 import { LogOut, Menu } from "lucide-react";
 import { useEffect, useState } from "react";
+import { FeedbackButton } from "~/components/feedback-button";
+import { SignInDialog } from "~/components/sign-in-dialog";
 import { Button } from "~/components/ui/button";
 import {
   Sheet,
@@ -11,6 +13,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "~/components/ui/sheet";
+import { withSignInSearch } from "~/lib/sign-in";
 import { cn } from "~/lib/utils";
 
 export type NavUser = {
@@ -48,15 +51,20 @@ function BrandMark({ className }: { className?: string }) {
 
 export function AppShell({
   user,
+  userJotProjectId,
   children,
 }: {
   user: NavUser;
+  userJotProjectId?: string;
   children: React.ReactNode;
 }) {
   const location = useLocation();
   const [open, setOpen] = useState(false);
 
   const visible = links.filter((l) => !l.auth || user);
+  const feedbackUser = user
+    ? { id: user.id, name: user.name, email: user.email }
+    : null;
 
   useEffect(() => {
     setOpen(false);
@@ -114,6 +122,13 @@ export function AppShell({
             </div>
 
             <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+              {userJotProjectId ? (
+                <FeedbackButton
+                  projectId={userJotProjectId}
+                  user={feedbackUser}
+                  className="hidden sm:inline-flex"
+                />
+              ) : null}
               {user ? (
                 <div className="hidden items-center gap-3 sm:flex">
                   <div className="text-right text-xs">
@@ -150,9 +165,7 @@ export function AppShell({
                 </div>
               ) : (
                 <Button asChild size="sm" className="hidden sm:inline-flex">
-                  <Link
-                    to={`/login?redirectTo=${encodeURIComponent(location.pathname)}`}
-                  >
+                  <Link to={{ search: withSignInSearch(location.search) }}>
                     Sign In
                   </Link>
                 </Button>
@@ -226,6 +239,13 @@ export function AppShell({
                   </nav>
 
                   <SheetFooter>
+                    {userJotProjectId ? (
+                      <FeedbackButton
+                        projectId={userJotProjectId}
+                        user={feedbackUser}
+                        fullWidth
+                      />
+                    ) : null}
                     {user ? (
                       <Form method="post" action="/logout">
                         <Button
@@ -240,7 +260,7 @@ export function AppShell({
                     ) : (
                       <Button asChild className="w-full">
                         <Link
-                          to={`/login?redirectTo=${encodeURIComponent(location.pathname)}`}
+                          to={{ search: withSignInSearch(location.search) }}
                           onClick={() => setOpen(false)}
                         >
                           Sign In
@@ -259,6 +279,8 @@ export function AppShell({
         {children}
       </div>
 
+      <SignInDialog loggedIn={Boolean(user)} />
+
       <footer className="mt-auto shrink-0 border-t border-[var(--color-line)] bg-white/60">
         <div className="page-shell !py-8">
           <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
@@ -274,7 +296,7 @@ export function AppShell({
             </div>
             <nav
               aria-label="Footer"
-              className="flex flex-wrap gap-x-5 gap-y-2 text-sm"
+              className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm"
             >
               <Link
                 to="/"
@@ -282,12 +304,23 @@ export function AppShell({
               >
                 Calculator
               </Link>
-              <Link
-                to="/login"
-                className="font-semibold text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
-              >
-                Sign In
-              </Link>
+              {userJotProjectId ? (
+                <FeedbackButton
+                  projectId={userJotProjectId}
+                  user={feedbackUser}
+                  variant="ghost"
+                  size="sm"
+                  className="-ml-2 text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
+                />
+              ) : null}
+              {user ? null : (
+                <Link
+                  to={{ search: withSignInSearch(location.search) }}
+                  className="font-semibold text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
+                >
+                  Sign In
+                </Link>
+              )}
             </nav>
           </div>
           <p className="mt-6 text-xs text-[var(--color-ink-muted)]">

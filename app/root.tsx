@@ -48,6 +48,10 @@ export const links: Route.LinksFunction = () => [
     rel: "dns-prefetch",
     href: "https://www.google-analytics.com",
   },
+  {
+    rel: "dns-prefetch",
+    href: "https://cdn.userjot.com",
+  },
 ];
 
 export function headers() {
@@ -63,6 +67,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   const session = await getSession(request);
   return {
     origin: new URL(request.url).origin,
+    userJotProjectId: process.env.USERJOT_PROJECT_ID?.trim() || "",
     user: session?.user
       ? {
           id: session.user.id,
@@ -106,9 +111,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
-  const { user } = useLoaderData<typeof loader>();
+  const { user, userJotProjectId } = useLoaderData<typeof loader>();
   return (
-    <AppShell user={user}>
+    <AppShell user={user} userJotProjectId={userJotProjectId}>
       <GoogleAnalytics />
       <GoogleAnalyticsPageViews />
       <Outlet />

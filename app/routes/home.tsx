@@ -41,6 +41,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { db } from "~/db/index.server";
 import { customers, materials, projects } from "~/db/schema";
+import { withSignInSearch } from "~/lib/sign-in";
 import {
   emptyPrint,
   emptyProject,
@@ -612,7 +613,7 @@ export default function Home() {
 
   async function saveProject(options?: { navigate?: boolean }) {
     if (!loggedIn) {
-      navigate("/login");
+      navigate({ search: withSignInSearch(searchParams.toString()) });
       return null;
     }
 
@@ -790,7 +791,9 @@ export default function Home() {
             </Button>
           ) : (
             <Button asChild className="col-span-2 sm:col-span-1">
-              <Link to="/login">Sign In to Save</Link>
+              <Link to={{ search: withSignInSearch(searchParams.toString()) }}>
+                Sign In to Save
+              </Link>
             </Button>
           )}
           {loggedIn && project.id ? (

@@ -398,31 +398,21 @@ export default function Home() {
         : null) ??
       "";
     const price = settings.defaultFilamentPricePerKg;
-    const filamentInv = data.inventory.filter((m) => m.kind === "filament");
+    // Keep slicer/3MF metadata as-is; do not auto-bind inventory.
+    // Users can still pick from inventory in the materials dropdown.
     const materials =
       result.filaments.length > 0
-        ? result.filaments.map((f) => {
-            const typeKey = (f.type || "").trim().toLowerCase();
-            const matched =
-              typeKey
-                ? filamentInv.find(
-                    (i) =>
-                      (i.type ?? "").trim().toLowerCase() === typeKey ||
-                      i.name.trim().toLowerCase() === typeKey,
-                  ) ?? null
-                : null;
-            return {
-              id: createId("mat"),
-              label: matched?.name || f.type || f.label || "Filament",
-              quantity: f.grams,
-              unit: "g" as const,
-              pricePerUnit: matched?.pricePerUnit ?? price,
-              inventoryMaterialId: matched?.id ?? null,
-              slot: f.slot ?? null,
-              type: matched?.type ?? f.type ?? null,
-              color: matched?.color ?? f.color ?? null,
-            };
-          })
+        ? result.filaments.map((f) => ({
+            id: createId("mat"),
+            label: f.type || f.label || "Filament",
+            quantity: f.grams,
+            unit: "g" as const,
+            pricePerUnit: price,
+            inventoryMaterialId: null,
+            slot: f.slot ?? null,
+            type: f.type ?? null,
+            color: f.color ?? null,
+          }))
         : base.materials;
 
     return {

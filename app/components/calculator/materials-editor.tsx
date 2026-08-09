@@ -76,6 +76,7 @@ export function MaterialsEditor({
       value: inventoryOptionValue(i.id),
       label: i.name,
       keywords: [i.type, i.color].filter(Boolean).join(" "),
+      group: "Your materials",
     })),
     ...presets
       .filter(
@@ -89,6 +90,7 @@ export function MaterialsEditor({
       .map((p) => ({
         value: p,
         label: p,
+        group: "Material types",
       })),
   ];
 
@@ -171,7 +173,11 @@ export function MaterialsEditor({
           </p>
         ) : (
           <p className="mt-0.5 text-xs text-[var(--color-ink-muted)]">
-            Search your inventory or type a custom material.
+            Choose from{" "}
+            <span className="font-medium text-[var(--color-ink)]">
+              Your materials
+            </span>
+            , a type, or enter a custom name.
           </p>
         )}
       </div>
@@ -192,9 +198,16 @@ export function MaterialsEditor({
           >
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
               <div className="min-w-0 flex-[1.4] space-y-2">
-                <Label htmlFor={materialId} className="text-xs">
-                  Material
-                </Label>
+                <div className="flex items-baseline justify-between gap-2">
+                  <Label htmlFor={materialId} className="text-xs">
+                    Material
+                  </Label>
+                  {line.inventoryMaterialId ? (
+                    <span className="text-[10px] font-medium uppercase tracking-wide text-[var(--color-ink-muted)]">
+                      Your materials
+                    </span>
+                  ) : null}
+                </div>
                 <Combobox
                   id={materialId}
                   aria-label={`Material ${line.label || line.type || ""}`.trim()}
@@ -202,11 +215,11 @@ export function MaterialsEditor({
                   value={selectedValue}
                   onChange={(v) => selectMaterial(line.id, v)}
                   placeholder={
-                    inv.length > 0 ? "Pick From Inventory…" : "Material Type"
+                    inv.length > 0 ? "Select material…" : "Material Type"
                   }
                   searchPlaceholder={
                     inv.length > 0
-                      ? "Search inventory or type…"
+                      ? "Search your materials or type…"
                       : "Search type…"
                   }
                   emptyText="No materials found."

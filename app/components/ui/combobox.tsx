@@ -23,6 +23,8 @@ export type ComboboxOption = {
   label: string;
   /** Extra text matched by search (not shown in the closed trigger). */
   keywords?: string;
+  /** Optional group heading in the dropdown list. */
+  group?: string;
 };
 
 type ComboboxProps = {
@@ -54,15 +56,36 @@ export function Combobox({
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
 
-  const selected = options.find((o) => o.value === value || o.label === value);
+  const selected = options.find((o) => o.value === value);
   const display = selected?.label ?? (value || placeholder);
 
   const filtered = options.filter((o) => {
     const q = query.toLowerCase().trim();
     if (!q) return true;
-    const haystack = `${o.label} ${o.value} ${o.keywords ?? ""}`.toLowerCase();
+    const haystack =
+      `${o.label} ${o.value} ${o.keywords ?? ""} ${o.group ?? ""}`.toLowerCase();
     return haystack.includes(q);
   });
+
+  const grouped: { heading?: string; options: ComboboxOption[] }[] = [];
+  {
+    const order: string[] = [];
+    const map = new Map<string, ComboboxOption[]>();
+    for (const option of filtered) {
+      const key = option.group ?? "";
+      if (!map.has(key)) {
+        map.set(key, []);
+        order.push(key);
+      }
+      map.get(key)!.push(option);
+    }
+    for (const key of order) {
+      grouped.push({
+        heading: key || undefined,
+        options: map.get(key)!,
+      });
+    }
+  }
 
   const showCustom =
     allowCustom &&
@@ -105,33 +128,40 @@ export function Combobox({
           />
           <CommandList>
             <CommandEmpty>{emptyText}</CommandEmpty>
-            <CommandGroup>
-              {filtered.map((option) => (
-                <CommandItem
-                  key={option.value}
-                  value={option.value}
-                  onSelect={() => {
-                    onChange(option.value);
-                    setOpen(false);
-                    setQuery("");
-                  }}
-                >
-                  <Check
-                    className={cn(
-                      "mr-2 size-4",
-                      value === option.value ? "opacity-100" : "opacity-0",
-                    )}
-                    aria-hidden
-                  />
-                  {option.label}
-                  {option.keywords ? (
-                    <span className="ml-2 truncate text-[var(--color-ink-muted)]">
-                      {option.keywords}
-                    </span>
-                  ) : null}
-                </CommandItem>
-              ))}
-              {showCustom ? (
+            {grouped.map((group) => (
+              <CommandGroup
+                key={group.heading ?? "__default"}
+                heading={group.heading}
+              >
+                {group.options.map((option) => (
+                  <CommandItem
+                    key={option.value}
+                    value={option.value}
+                    onSelect={() => {
+                      onChange(option.value);
+                      setOpen(false);
+                      setQuery("");
+                    }}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 size-4",
+                        value === option.value ? "opacity-100" : "opacity-0",
+                      )}
+                      aria-hidden
+                    />
+                    <span className="min-w-0 flex-1 truncate">{option.label}</span>
+                    {option.keywords ? (
+                      <span className="ml-2 truncate text-[var(--color-ink-muted)]">
+                        {option.keywords}
+                      </span>
+                    ) : null}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            ))}
+            {showCustom ? (
+              <CommandGroup>
                 <CommandItem
                   value={`custom:${query}`}
                   onSelect={() => {
@@ -142,8 +172,8 @@ export function Combobox({
                 >
                   Use “{query.trim()}”
                 </CommandItem>
-              ) : null}
-            </CommandGroup>
+              </CommandGroup>
+            ) : null}
           </CommandList>
         </Command>
       </PopoverContent>

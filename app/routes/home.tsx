@@ -1065,7 +1065,24 @@ export default function Home() {
                         </span>
                       </Button>
                     </label>
-                  ) : null}
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className="w-full sm:w-auto"
+                      asChild
+                    >
+                      <Link
+                        to={{
+                          search: withSignInSearch(searchParams.toString()),
+                        }}
+                        className="inline-flex items-center justify-center gap-2"
+                      >
+                        <Upload className="size-4" aria-hidden />
+                        Upload 3MF / G-code
+                      </Link>
+                    </Button>
+                  )}
                 </div>
               </div>
               {message || warning || error ? (

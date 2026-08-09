@@ -1,5 +1,6 @@
 import { CircleHelp, Clock, Trash2, Upload } from "lucide-react";
 import { useState } from "react";
+import { Link, useLocation } from "react-router";
 import { AddonsEditor } from "~/components/calculator/addons-editor";
 import { remapMaterialsForTech } from "~/components/calculator/materials-editor";
 import { MaterialsEditor } from "~/components/calculator/materials-editor";
@@ -22,6 +23,7 @@ import type {
 } from "~/lib/calculator-types";
 import { PRINTER_PRESETS, type Technology } from "~/lib/pricing";
 import type { AppSettings } from "~/lib/settings";
+import { withSignInSearch } from "~/lib/sign-in";
 import { cn } from "~/lib/utils";
 
 type Props = {
@@ -55,6 +57,7 @@ export function PrintEditor({
   embedded = false,
   nameError,
 }: Props) {
+  const location = useLocation();
   const [confirmRemove, setConfirmRemove] = useState(false);
   const defaultPrice =
     print.technology === "sla"
@@ -145,34 +148,51 @@ export function PrintEditor({
           ) : null}
         </div>
         <div className="flex flex-col gap-2 sm:col-span-2 sm:flex-row sm:flex-wrap sm:items-end sm:justify-end">
-          {loggedIn && onUploadFiles && print.technology === "fdm" ? (
+          {print.technology === "fdm" ? (
             <div className="flex w-full items-center gap-1.5 sm:w-auto">
-              <label className="inline-flex min-w-0 flex-1 sm:flex-initial">
-                <input
-                  type="file"
-                  accept=".gcode,.3mf,.zip,.gcode.3mf"
-                  className="sr-only"
-                  disabled={uploading}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      onUploadFiles([file]);
-                    }
-                    e.target.value = "";
-                  }}
-                />
+              {loggedIn && onUploadFiles ? (
+                <label className="inline-flex min-w-0 flex-1 sm:flex-initial">
+                  <input
+                    type="file"
+                    accept=".gcode,.3mf,.zip,.gcode.3mf"
+                    className="sr-only"
+                    disabled={uploading}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        onUploadFiles([file]);
+                      }
+                      e.target.value = "";
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="w-full sm:w-auto"
+                    asChild
+                  >
+                    <span className="inline-flex cursor-pointer items-center justify-center gap-2">
+                      <Upload className="size-4" aria-hidden />
+                      {uploading ? "Importing…" : "Upload 3MF / G-code"}
+                    </span>
+                  </Button>
+                </label>
+              ) : (
                 <Button
                   type="button"
                   variant="secondary"
-                  className="w-full sm:w-auto"
+                  className="w-full min-w-0 flex-1 sm:w-auto sm:flex-initial"
                   asChild
                 >
-                  <span className="inline-flex cursor-pointer items-center justify-center gap-2">
+                  <Link
+                    to={{ search: withSignInSearch(location.search) }}
+                    className="inline-flex items-center justify-center gap-2"
+                  >
                     <Upload className="size-4" aria-hidden />
-                    {uploading ? "Importing…" : "Upload 3MF / G-code"}
-                  </span>
+                    Upload 3MF / G-code
+                  </Link>
                 </Button>
-              </label>
+              )}
               {onOpenImportGuide ? (
                 <Button
                   type="button"
@@ -187,16 +207,6 @@ export function PrintEditor({
                 </Button>
               ) : null}
             </div>
-          ) : onOpenImportGuide && print.technology === "fdm" ? (
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full sm:w-auto"
-              onClick={onOpenImportGuide}
-            >
-              <CircleHelp className="size-4" aria-hidden />
-              How to export 3MF
-            </Button>
           ) : null}
           {canRemove && onRemove ? (
             <Button

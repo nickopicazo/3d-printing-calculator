@@ -844,7 +844,7 @@ export default function Home() {
                   aria-label="Currency"
                   options={listCurrencies().map((c) => ({
                     value: c.code,
-                    label: `${c.code} · ${c.symbol}`,
+                    label: c.code,
                     keywords: c.name,
                   }))}
                   value={settings.currencyCode}

@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { Download, Plus, Printer, Save, Trash2, Upload } from "lucide-react";
+import { CircleHelp, Download, Plus, Printer, Save, Trash2, Upload } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Link,
@@ -13,6 +13,10 @@ import { AdvancedSettingsPanel } from "~/components/calculator/advanced-settings
 import { CostBreakdown } from "~/components/calculator/cost-breakdown";
 import { CustomerSection } from "~/components/calculator/customer-section";
 import { GuestInvoicePrint } from "~/components/calculator/guest-invoice-print";
+import {
+  Import3mfTour,
+  useImport3mfTourAutoOpen,
+} from "~/components/calculator/import-3mf-tour";
 import { PrintEditor } from "~/components/calculator/print-editor";
 import { Combobox } from "~/components/ui/combobox";
 import { ConfirmDeleteDialog } from "~/components/ui/confirm-delete-dialog";
@@ -150,6 +154,8 @@ export default function Home() {
     id: string;
     name: string;
   } | null>(null);
+  const { open: importTourOpen, setOpen: setImportTourOpen } =
+    useImport3mfTourAutoOpen();
   const projectNameRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -746,6 +752,11 @@ export default function Home() {
           if (pendingDelete) void deleteSavedProject(pendingDelete.id);
         }}
       />
+      <Import3mfTour
+        open={importTourOpen}
+        loggedIn={loggedIn}
+        onOpenChange={setImportTourOpen}
+      />
       <div className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
         <div className="min-w-0">
           <h1 className="font-display text-2xl font-extrabold tracking-tight sm:text-3xl lg:text-4xl">
@@ -758,6 +769,15 @@ export default function Home() {
           </p>
         </div>
         <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
+          <Button
+            type="button"
+            variant="outline"
+            className="col-span-2 sm:col-span-1"
+            onClick={() => setImportTourOpen(true)}
+          >
+            <CircleHelp />
+            3MF import guide
+          </Button>
           {loggedIn ? (
             <Button
               type="button"
@@ -1016,40 +1036,42 @@ export default function Home() {
                 <h2 className="font-display text-xl font-extrabold tracking-tight sm:text-2xl">
                   Prints
                 </h2>
-                {loggedIn ? (
-                  <label className="inline-flex w-full sm:w-auto">
-                    <input
-                      type="file"
-                      accept=".gcode,.3mf,.zip,.gcode.3mf"
-                      multiple
-                      className="sr-only"
-                      disabled={uploadPrintId != null}
-                      onChange={(e) => {
-                        const list = e.target.files;
-                        if (list && list.length > 0 && activePrintId) {
-                          void handleUploadFiles(
-                            activePrintId,
-                            Array.from(list),
-                          );
-                        }
-                        e.target.value = "";
-                      }}
-                    />
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      className="w-full sm:w-auto"
-                      asChild
-                    >
-                      <span className="inline-flex cursor-pointer items-center justify-center gap-2">
-                        <Upload className="size-4" aria-hidden />
-                        {uploadPrintId != null
-                          ? "Importing…"
-                          : "Upload 3MF / G-code"}
-                      </span>
-                    </Button>
-                  </label>
-                ) : null}
+                <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+                  {loggedIn ? (
+                    <label className="inline-flex w-full sm:w-auto">
+                      <input
+                        type="file"
+                        accept=".gcode,.3mf,.zip,.gcode.3mf"
+                        multiple
+                        className="sr-only"
+                        disabled={uploadPrintId != null}
+                        onChange={(e) => {
+                          const list = e.target.files;
+                          if (list && list.length > 0 && activePrintId) {
+                            void handleUploadFiles(
+                              activePrintId,
+                              Array.from(list),
+                            );
+                          }
+                          e.target.value = "";
+                        }}
+                      />
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        className="w-full sm:w-auto"
+                        asChild
+                      >
+                        <span className="inline-flex cursor-pointer items-center justify-center gap-2">
+                          <Upload className="size-4" aria-hidden />
+                          {uploadPrintId != null
+                            ? "Importing…"
+                            : "Upload 3MF / G-code"}
+                        </span>
+                      </Button>
+                    </label>
+                  ) : null}
+                </div>
               </div>
               {message || warning || error ? (
                 <div className="space-y-2">
@@ -1145,6 +1167,7 @@ export default function Home() {
                             ? (files) => handleUploadFiles(print.id, files)
                             : undefined
                         }
+                        onOpenImportGuide={() => setImportTourOpen(true)}
                       />
                       {printCalc ? (
                         <CostBreakdown

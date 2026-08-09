@@ -1,4 +1,4 @@
-import { Trash2, Upload } from "lucide-react";
+import { CircleHelp, Trash2, Upload } from "lucide-react";
 import { useState } from "react";
 import { AddonsEditor } from "~/components/calculator/addons-editor";
 import { remapMaterialsForTech } from "~/components/calculator/materials-editor";
@@ -27,6 +27,8 @@ type Props = {
   onRemove?: () => void;
   onUploadFiles?: (files: File[]) => void;
   uploading?: boolean;
+  /** Opens the 3MF / Bambu Studio export guide. */
+  onOpenImportGuide?: () => void;
   /** When true, skip the outer card chrome (parent already provides it). */
   embedded?: boolean;
   nameError?: string;
@@ -42,6 +44,7 @@ export function PrintEditor({
   onRemove,
   onUploadFiles,
   uploading,
+  onOpenImportGuide,
   embedded = false,
   nameError,
 }: Props) {
@@ -136,27 +139,57 @@ export function PrintEditor({
         </div>
         <div className="flex w-full flex-col gap-2 self-stretch sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:self-end">
           {loggedIn && onUploadFiles && print.technology === "fdm" ? (
-            <label className="inline-flex w-full sm:w-auto">
-              <input
-                type="file"
-                accept=".gcode,.3mf,.zip,.gcode.3mf"
-                className="sr-only"
-                disabled={uploading}
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    onUploadFiles([file]);
-                  }
-                  e.target.value = "";
-                }}
-              />
-              <Button type="button" variant="secondary" className="w-full sm:w-auto" asChild>
-                <span className="inline-flex cursor-pointer items-center justify-center gap-2">
-                  <Upload className="size-4" aria-hidden />
-                  {uploading ? "Importing…" : "Upload 3MF / G-code"}
-                </span>
-              </Button>
-            </label>
+            <div className="flex w-full items-center gap-1.5 sm:w-auto">
+              <label className="inline-flex min-w-0 flex-1 sm:flex-initial">
+                <input
+                  type="file"
+                  accept=".gcode,.3mf,.zip,.gcode.3mf"
+                  className="sr-only"
+                  disabled={uploading}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      onUploadFiles([file]);
+                    }
+                    e.target.value = "";
+                  }}
+                />
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="w-full sm:w-auto"
+                  asChild
+                >
+                  <span className="inline-flex cursor-pointer items-center justify-center gap-2">
+                    <Upload className="size-4" aria-hidden />
+                    {uploading ? "Importing…" : "Upload 3MF / G-code"}
+                  </span>
+                </Button>
+              </label>
+              {onOpenImportGuide ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="shrink-0"
+                  aria-label="How to export a 3MF from Bambu Studio"
+                  title="How to export a 3MF"
+                  onClick={onOpenImportGuide}
+                >
+                  <CircleHelp className="size-4" aria-hidden />
+                </Button>
+              ) : null}
+            </div>
+          ) : onOpenImportGuide && print.technology === "fdm" ? (
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full sm:w-auto"
+              onClick={onOpenImportGuide}
+            >
+              <CircleHelp className="size-4" aria-hidden />
+              How to export 3MF
+            </Button>
           ) : null}
           {canRemove && onRemove ? (
             <Button

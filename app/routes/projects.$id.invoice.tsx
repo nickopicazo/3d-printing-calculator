@@ -145,7 +145,7 @@ export default function ProjectInvoicePage() {
       `}</style>
 
       <div className="mb-6 flex flex-wrap gap-2 print:hidden">
-        <Button asChild variant="secondary" size="sm">
+        <Button asChild variant="outline" size="sm">
           <Link to={`/?projectId=${data.project.id}`}>Back</Link>
         </Button>
         <Button type="button" size="sm" onClick={() => window.print()}>

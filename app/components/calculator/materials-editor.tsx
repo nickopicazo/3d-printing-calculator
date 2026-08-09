@@ -317,7 +317,7 @@ export function MaterialsEditor({
           </div>
         );
       })}
-      <Button type="button" size="sm" variant="secondary" onClick={add}>
+      <Button type="button" size="sm" variant="outline" onClick={add}>
         <Plus />
         Add Material
       </Button>

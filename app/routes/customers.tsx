@@ -199,7 +199,7 @@ export default function CustomersPage() {
               <DialogFooter className="sm:col-span-2">
                 <Button
                   type="button"
-                  variant="secondary"
+                  variant="outline"
                   onClick={() => setAddOpen(false)}
                 >
                   Cancel
@@ -324,7 +324,7 @@ export default function CustomersPage() {
                       <Label>New Project</Label>
                       <Input name="name" placeholder="Project Name" required />
                     </div>
-                    <Button type="submit" variant="secondary">
+                    <Button type="submit" variant="outline">
                       Add Project
                     </Button>
                   </Form>

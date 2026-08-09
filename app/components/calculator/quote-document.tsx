@@ -115,8 +115,7 @@ export function QuoteDocument({
         maxWidth: 720,
         margin: "0 auto",
         color: "#16161a",
-        fontFamily:
-          '"Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif',
+        fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif',
         WebkitPrintColorAdjust: "exact",
         printColorAdjust: "exact",
       }}

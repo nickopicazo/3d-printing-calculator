@@ -294,7 +294,7 @@ export default function MaterialsPage() {
               <DialogFooter className="sm:col-span-2">
                 <Button
                   type="button"
-                  variant="secondary"
+                  variant="outline"
                   onClick={() => setAddOpen(false)}
                 >
                   Cancel
@@ -423,7 +423,7 @@ export default function MaterialsPage() {
                           <Button
                             type="button"
                             size="sm"
-                            variant="secondary"
+                            variant="outline"
                             onClick={() => setEditingId(null)}
                           >
                             <X />
@@ -472,7 +472,7 @@ export default function MaterialsPage() {
                           <Button
                             type="button"
                             size="sm"
-                            variant="secondary"
+                            variant="outline"
                             className="w-full sm:w-auto"
                             onClick={() => setEditingId(row.id)}
                           >

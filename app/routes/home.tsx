@@ -776,7 +776,7 @@ export default function Home() {
           {loggedIn && project.id ? (
             <Button
               type="button"
-              variant="secondary"
+              variant="outline"
               disabled={busy}
               onClick={startNewProject}
             >
@@ -1038,7 +1038,6 @@ export default function Home() {
                     <Button
                       type="button"
                       variant="secondary"
-                      size="sm"
                       className="w-full sm:w-auto"
                       asChild
                     >
@@ -1201,7 +1200,7 @@ export default function Home() {
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
               <Button
                 type="button"
-                variant="secondary"
+                variant="outline"
                 className="w-full flex-1"
                 onClick={() => window.print()}
               >
@@ -1209,7 +1208,7 @@ export default function Home() {
                 Print Quote
               </Button>
               {loggedIn && project.id ? (
-                <Button asChild variant="secondary" className="w-full flex-1">
+                <Button asChild variant="outline" className="w-full flex-1">
                   <Link to={`/projects/${project.id}/invoice`}>
                     <Download />
                     Export PDF

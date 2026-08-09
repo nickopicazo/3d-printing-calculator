@@ -11,9 +11,9 @@ const buttonVariants = cva(
         default:
           "bg-[var(--color-accent)] text-white hover:bg-[var(--color-accent-deep)] shadow-[0_8px_20px_rgba(111,82,240,0.28)]",
         secondary:
-          "border border-[var(--color-line)] bg-white text-[var(--color-ink-muted)] hover:bg-[var(--color-paper)] hover:text-[var(--color-ink)]",
+          "border border-[rgba(111,82,240,0.28)] bg-[rgba(111,82,240,0.1)] text-[var(--color-accent-deep)] hover:border-[rgba(111,82,240,0.4)] hover:bg-[rgba(111,82,240,0.16)]",
         outline:
-          "border border-[var(--color-line)] bg-[var(--color-panel)] hover:bg-[var(--color-paper)]",
+          "border border-[var(--color-line)] bg-white text-[var(--color-ink-muted)] hover:bg-[var(--color-paper)] hover:text-[var(--color-ink)]",
         ghost: "hover:bg-[rgba(22,22,26,0.05)] text-[var(--color-ink-muted)]",
         destructive:
           "border border-[#e8c4be] bg-transparent text-[#a33b2b] hover:bg-[#fdf4f2]",

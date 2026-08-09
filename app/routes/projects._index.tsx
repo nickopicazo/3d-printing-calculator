@@ -301,7 +301,7 @@ export default function ProjectsIndexPage() {
                     {formatMoney(materialCost, symbol)}
                   </p>
                   <div className="grid grid-cols-3 gap-2 sm:flex">
-                    <Button asChild size="sm" variant="secondary" className="w-full sm:w-auto">
+                    <Button asChild size="sm" variant="outline" className="w-full sm:w-auto">
                       <Link to={`/?projectId=${project.id}`}>Open</Link>
                     </Button>
                     <Button asChild size="sm" className="w-full sm:w-auto">

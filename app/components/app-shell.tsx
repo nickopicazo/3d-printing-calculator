@@ -140,7 +140,7 @@ export function AppShell({
                   <Form method="post" action="/logout">
                     <Button
                       type="submit"
-                      variant="secondary"
+                      variant="outline"
                       size="icon"
                       aria-label="Sign Out"
                     >
@@ -230,7 +230,7 @@ export function AppShell({
                       <Form method="post" action="/logout">
                         <Button
                           type="submit"
-                          variant="secondary"
+                          variant="outline"
                           className="w-full"
                         >
                           <LogOut />

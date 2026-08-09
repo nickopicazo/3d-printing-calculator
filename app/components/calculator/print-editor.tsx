@@ -1,4 +1,4 @@
-import { Upload } from "lucide-react";
+import { Trash2, Upload } from "lucide-react";
 import { useState } from "react";
 import { AddonsEditor } from "~/components/calculator/addons-editor";
 import { remapMaterialsForTech } from "~/components/calculator/materials-editor";
@@ -150,7 +150,7 @@ export function PrintEditor({
                   e.target.value = "";
                 }}
               />
-              <Button type="button" className="w-full sm:w-auto" asChild>
+              <Button type="button" variant="secondary" className="w-full sm:w-auto" asChild>
                 <span className="inline-flex cursor-pointer items-center justify-center gap-2">
                   <Upload className="size-4" aria-hidden />
                   {uploading ? "Importing…" : "Upload 3MF / G-code"}
@@ -165,6 +165,7 @@ export function PrintEditor({
               className="w-full sm:w-auto"
               onClick={() => setConfirmRemove(true)}
             >
+              <Trash2 />
               Remove Print
             </Button>
           ) : null}

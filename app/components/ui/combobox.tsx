@@ -27,6 +27,11 @@ export type ComboboxOption = {
   group?: string;
 };
 
+/** How many options stay visible before the list scrolls. */
+const VISIBLE_ITEMS = 8;
+/** Matches CommandItem row height (py-1.5 + text-sm). */
+const ITEM_HEIGHT = "2.25rem";
+
 type ComboboxProps = {
   options: ComboboxOption[];
   value: string;
@@ -39,6 +44,8 @@ type ComboboxProps = {
   id?: string;
   /** Accessible name when a visible <Label htmlFor> is not enough for axe. */
   "aria-label"?: string;
+  "aria-invalid"?: boolean;
+  "aria-describedby"?: string;
 };
 
 export function Combobox({
@@ -52,6 +59,8 @@ export function Combobox({
   className,
   id,
   "aria-label": ariaLabel,
+  "aria-invalid": ariaInvalid,
+  "aria-describedby": ariaDescribedBy,
 }: ComboboxProps) {
   const [open, setOpen] = React.useState(false);
   const [query, setQuery] = React.useState("");
@@ -93,7 +102,7 @@ export function Combobox({
     !options.some((o) => o.label.toLowerCase() === query.trim().toLowerCase());
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={setOpen} modal={false}>
       <PopoverTrigger asChild>
         <Button
           id={id}
@@ -101,10 +110,14 @@ export function Combobox({
           variant="outline"
           role="combobox"
           aria-expanded={open}
+          aria-invalid={ariaInvalid}
+          aria-describedby={ariaDescribedBy}
           aria-label={ariaLabel ?? placeholder}
           className={cn(
             "h-10 w-full justify-between rounded-xl bg-[var(--color-field)] px-3 font-normal shadow-none hover:bg-[var(--color-field)] focus-visible:border-[var(--color-accent)] focus-visible:shadow-[0_0_0_3px_rgba(111,82,240,0.18)] focus-visible:ring-0 focus-visible:ring-offset-0",
             !value && "text-[var(--color-ink-muted)]",
+            ariaInvalid &&
+              "border-[#e8c4be] focus-visible:border-[#a33b2b] focus-visible:shadow-[0_0_0_3px_rgba(163,59,43,0.15)]",
             className,
           )}
         >
@@ -119,15 +132,19 @@ export function Combobox({
         )}
         collisionPadding={16}
         align="start"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+        onWheel={(e) => e.stopPropagation()}
       >
-        <Command shouldFilter={false}>
+        <Command shouldFilter={false} className="overflow-hidden">
           <CommandInput
             placeholder={searchPlaceholder}
             value={query}
             onValueChange={setQuery}
           />
-          <CommandList>
-            <CommandEmpty>{emptyText}</CommandEmpty>
+          <CommandList
+            className="overflow-y-auto overscroll-contain"
+            style={{ maxHeight: `calc(${VISIBLE_ITEMS} * ${ITEM_HEIGHT})` }}
+          >            <CommandEmpty>{emptyText}</CommandEmpty>
             {grouped.map((group) => (
               <CommandGroup
                 key={group.heading ?? "__default"}

@@ -78,20 +78,11 @@ export function MaterialsEditor({
       keywords: [i.type, i.color].filter(Boolean).join(" "),
       group: "Your materials",
     })),
-    ...presets
-      .filter(
-        (p) =>
-          !inv.some(
-            (i) =>
-              i.name.toLowerCase() === p.toLowerCase() ||
-              (i.type ?? "").toLowerCase() === p.toLowerCase(),
-          ),
-      )
-      .map((p) => ({
-        value: p,
-        label: p,
-        group: "Material types",
-      })),
+    ...presets.map((p) => ({
+      value: p,
+      label: p,
+      group: "Material types",
+    })),
   ];
 
   function update(id: string, patch: Partial<MaterialLine>) {
@@ -318,7 +309,7 @@ export function MaterialsEditor({
                 onClick={() =>
                   setPendingDelete({
                     id: line.id,
-                    name: (line.label || line.type).trim(),
+                    name: (line.label || line.type || "").trim(),
                   })
                 }
                 aria-label="Remove Material"

@@ -1,15 +1,15 @@
 import type { MetaDescriptor } from "react-router";
 
 export const SITE_NAME = "3D Printing Calculator";
-export const SITE_TAGLINE = "Accurate Cost Estimation";
+export const SITE_TAGLINE = "Know Exactly What to Charge";
 export const SITE_TITLE = `${SITE_NAME} - ${SITE_TAGLINE}`;
 export const SITE_DESCRIPTION =
-  "Calculate filament consumption, electricity, and print costs in seconds. Free FDM and SLA cost estimator for 3D printing shops and makers.";
+  "Free 3D printing pricing calculator for makers and print businesses. Estimate filament, electricity, machine time, labor, and recommended selling price for FDM and SLA.";
 
 export const OG_IMAGE_PATH = "/og-image.png";
 
-/** Public paths included in the sitemap (auth-gated app pages stay noindex). */
-export const PUBLIC_PATHS = ["/", "/login"] as const;
+/** Fallback public paths; sitemap prefers catalog + guides helpers. */
+export const PUBLIC_PATHS = ["/"] as const;
 
 export function absoluteUrl(origin: string, path: string): string {
   const base = origin.replace(/\/$/, "");
@@ -220,11 +220,13 @@ export const SITE_FAQS: ReadonlyArray<{ question: string; answer: string }> = [
   },
 ];
 
-export function faqJsonLd() {
+export function faqJsonLd(
+  faqs: ReadonlyArray<{ question: string; answer: string }> = SITE_FAQS,
+) {
   return {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    mainEntity: SITE_FAQS.map((item) => ({
+    mainEntity: faqs.map((item) => ({
       "@type": "Question",
       name: item.question,
       acceptedAnswer: {

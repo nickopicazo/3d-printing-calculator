@@ -1,6 +1,6 @@
 import { and, desc, eq } from "drizzle-orm";
 import { Pencil, Plus, Trash2, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   Form,
   redirect,
@@ -11,6 +11,7 @@ import {
 import type { Route } from "./+types/materials";
 import { ConfirmDeleteDialog } from "~/components/ui/confirm-delete-dialog";
 import { Button } from "~/components/ui/button";
+import { Combobox } from "~/components/ui/combobox";
 import {
   Dialog,
   DialogContent,
@@ -32,10 +33,85 @@ import {
 import { db } from "~/db/index.server";
 import { materials } from "~/db/schema";
 import { withParentMeta } from "~/lib/seo";
-import { formatMoney } from "~/lib/pricing";
+import {
+  FDM_MATERIALS,
+  formatMoney,
+  SLA_MATERIALS,
+} from "~/lib/pricing";
 import { newId, requireUser } from "~/lib/session.server";
 import { DEFAULT_SETTINGS } from "~/lib/settings";
 import { cn } from "~/lib/utils";
+
+const FIELD_ERROR_CLASS =
+  "border-[#e8c4be] focus:border-[#a33b2b] focus:shadow-[0_0_0_3px_rgba(163,59,43,0.15)]";
+
+type MaterialFieldErrors = {
+  name?: string;
+  type?: string;
+  pricePerUnit?: string;
+  color?: string;
+};
+
+type MaterialFormValues = {
+  name: string;
+  kind: string;
+  type: string;
+  color: string;
+  pricePerUnit: string;
+};
+
+function normalizeHex(color: string | null | undefined): string | null {
+  if (!color) return null;
+  const raw = color.trim();
+  if (/^#[0-9a-fA-F]{6}$/.test(raw)) return raw.toUpperCase();
+  if (/^#[0-9a-fA-F]{3}$/.test(raw)) {
+    const [, a, b, c] = raw;
+    return `#${a}${a}${b}${b}${c}${c}`.toUpperCase();
+  }
+  if (/^[0-9a-fA-F]{6}$/.test(raw)) return `#${raw}`.toUpperCase();
+  return null;
+}
+
+function parseMaterialForm(form: FormData): {
+  values: MaterialFormValues;
+  kind: "filament" | "resin";
+  price: number;
+  color: string | null;
+  errors: MaterialFieldErrors;
+} {
+  const name = String(form.get("name") ?? "").trim();
+  const kindRaw = String(form.get("kind") ?? "filament");
+  const kind = kindRaw === "resin" ? "resin" : "filament";
+  const type = String(form.get("type") ?? "").trim();
+  const colorRaw = String(form.get("color") ?? "").trim();
+  const priceRaw = String(form.get("pricePerUnit") ?? "").trim();
+  const price = priceRaw === "" ? NaN : Number(priceRaw);
+
+  const errors: MaterialFieldErrors = {};
+  if (!name) errors.name = "Name is required.";
+  if (!type) errors.type = "Type is required.";
+  if (!priceRaw) errors.pricePerUnit = "Price is required.";
+  else if (!Number.isFinite(price) || price < 0) {
+    errors.pricePerUnit = "Enter a valid price (0 or greater).";
+  }
+  if (colorRaw && !normalizeHex(colorRaw)) {
+    errors.color = "Use a hex color like #000000.";
+  }
+
+  return {
+    values: {
+      name,
+      kind,
+      type,
+      color: colorRaw,
+      pricePerUnit: priceRaw,
+    },
+    kind,
+    price,
+    color: colorRaw ? normalizeHex(colorRaw) ?? colorRaw : null,
+    errors,
+  };
+}
 
 export function meta({ matches }: Route.MetaArgs) {
   return withParentMeta(matches, [
@@ -60,44 +136,41 @@ export async function action({ request }: Route.ActionArgs) {
   const intent = String(form.get("intent") ?? "");
 
   if (intent === "create") {
-    const name = String(form.get("name") ?? "").trim();
-    const kind = String(form.get("kind") ?? "filament");
-    const type = String(form.get("type") ?? "").trim() || null;
-    const color = String(form.get("color") ?? "").trim() || null;
-    const pricePerUnit = Number(form.get("pricePerUnit"));
-    if (!name || !Number.isFinite(pricePerUnit) || pricePerUnit < 0) {
-      return { createError: "Name and a valid unit price are required." };
+    const parsed = parseMaterialForm(form);
+    if (Object.keys(parsed.errors).length > 0) {
+      return { createErrors: parsed.errors, createValues: parsed.values };
     }
     await db.insert(materials).values({
       id: newId(),
       userId: session.user.id,
-      name,
-      kind: kind === "resin" ? "resin" : "filament",
-      type,
-      color,
-      pricePerUnit,
+      name: parsed.values.name,
+      kind: parsed.kind,
+      type: parsed.values.type,
+      color: parsed.color,
+      pricePerUnit: parsed.price,
     });
     return redirect("/materials");
   }
 
   if (intent === "update") {
     const id = String(form.get("id") ?? "");
-    const name = String(form.get("name") ?? "").trim();
-    const kind = String(form.get("kind") ?? "filament");
-    const type = String(form.get("type") ?? "").trim() || null;
-    const color = String(form.get("color") ?? "").trim() || null;
-    const pricePerUnit = Number(form.get("pricePerUnit"));
-    if (!id || !name || !Number.isFinite(pricePerUnit) || pricePerUnit < 0) {
-      return { error: "Invalid material update." };
+    const parsed = parseMaterialForm(form);
+    if (!id) return { error: "Invalid material update." };
+    if (Object.keys(parsed.errors).length > 0) {
+      return {
+        updateErrors: parsed.errors,
+        updateValues: parsed.values,
+        updateId: id,
+      };
     }
     await db
       .update(materials)
       .set({
-        name,
-        kind: kind === "resin" ? "resin" : "filament",
-        type,
-        color,
-        pricePerUnit,
+        name: parsed.values.name,
+        kind: parsed.kind,
+        type: parsed.values.type,
+        color: parsed.color,
+        pricePerUnit: parsed.price,
         updatedAt: new Date(),
       })
       .where(and(eq(materials.id, id), eq(materials.userId, session.user.id)));
@@ -117,47 +190,55 @@ export async function action({ request }: Route.ActionArgs) {
   return { error: "Unknown action." };
 }
 
-function normalizeHex(color: string | null | undefined): string | null {
-  if (!color) return null;
-  const raw = color.trim();
-  if (/^#[0-9a-fA-F]{6}$/.test(raw)) return raw.toUpperCase();
-  if (/^#[0-9a-fA-F]{3}$/.test(raw)) {
-    const [, a, b, c] = raw;
-    return `#${a}${a}${b}${b}${c}${c}`.toUpperCase();
-  }
-  if (/^[0-9a-fA-F]{6}$/.test(raw)) return `#${raw}`.toUpperCase();
-  return null;
-}
-
 function ColorField({
   id,
   name,
   defaultValue,
+  error,
+  onValueChange,
 }: {
   id: string;
   name: string;
   defaultValue?: string | null;
+  error?: string;
+  onValueChange?: () => void;
 }) {
-  const initial = normalizeHex(defaultValue) ?? "";
+  const initial = normalizeHex(defaultValue) ?? defaultValue?.trim() ?? "";
   const [hex, setHex] = useState(initial);
+  const errorId = `${id}-error`;
 
   return (
-    <div className="flex gap-2">
-      <input
-        type="color"
-        aria-label="Color swatch"
-        className="h-10 w-12 shrink-0 cursor-pointer rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] p-1"
-        value={normalizeHex(hex) ?? "#CCCCCC"}
-        onChange={(e) => setHex(e.target.value.toUpperCase())}
-      />
-      <Input
-        id={id}
-        name={name}
-        value={hex}
-        onChange={(e) => setHex(e.target.value)}
-        placeholder="#000000"
-        className="font-mono uppercase"
-      />
+    <div className="space-y-1.5">
+      <div className="flex gap-2">
+        <input
+          type="color"
+          aria-label="Color swatch"
+          className="h-10 w-12 shrink-0 cursor-pointer rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] p-1"
+          value={normalizeHex(hex) ?? "#CCCCCC"}
+          onChange={(e) => {
+            setHex(e.target.value.toUpperCase());
+            onValueChange?.();
+          }}
+        />
+        <Input
+          id={id}
+          name={name}
+          value={hex}
+          onChange={(e) => {
+            setHex(e.target.value);
+            onValueChange?.();
+          }}
+          placeholder="#000000"
+          aria-invalid={Boolean(error)}
+          aria-describedby={error ? errorId : undefined}
+          className={cn("font-mono uppercase", error && FIELD_ERROR_CLASS)}
+        />
+      </div>
+      {error ? (
+        <p id={errorId} className="text-xs text-[#a33b2b]">
+          {error}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -166,14 +247,24 @@ function KindSelect({
   id,
   name,
   defaultValue,
+  value: valueProp,
+  onValueChange,
   detailed,
 }: {
   id: string;
   name: string;
   defaultValue?: string;
+  value?: string;
+  onValueChange?: (value: string) => void;
   detailed?: boolean;
 }) {
-  const [value, setValue] = useState(defaultValue ?? "filament");
+  const [internal, setInternal] = useState(defaultValue ?? "filament");
+  const value = valueProp ?? internal;
+
+  function setValue(next: string) {
+    setInternal(next);
+    onValueChange?.(next);
+  }
 
   return (
     <>
@@ -195,27 +286,161 @@ function KindSelect({
   );
 }
 
+function MaterialTypeField({
+  id,
+  name,
+  kind,
+  defaultValue,
+  extraTypes = [],
+  error,
+  onValueChange,
+}: {
+  id: string;
+  name: string;
+  kind: string;
+  defaultValue?: string | null;
+  extraTypes?: string[];
+  error?: string;
+  onValueChange?: () => void;
+}) {
+  const [value, setValue] = useState(defaultValue?.trim() ?? "");
+  const presets = kind === "resin" ? [...SLA_MATERIALS] : [...FDM_MATERIALS];
+  const presetSet = new Set(presets.map((t) => t.toLowerCase()));
+  const customExtras = Array.from(
+    new Set(
+      [...extraTypes, value]
+        .map((t) => t.trim())
+        .filter((t) => t && !presetSet.has(t.toLowerCase())),
+    ),
+  );
+  const options = [
+    ...presets.map((t) => ({ value: t, label: t })),
+    ...customExtras.map((t) => ({ value: t, label: t })),
+  ];
+  const errorId = `${id}-error`;
+
+  return (
+    <div className="space-y-1.5">
+      <input type="hidden" name={name} value={value} />
+      <Combobox
+        id={id}
+        options={options}
+        value={value}
+        onChange={(next) => {
+          setValue(next);
+          onValueChange?.();
+        }}
+        placeholder="Select or type…"
+        searchPlaceholder="Search or add type…"
+        emptyText="No types found."
+        allowCustom
+        aria-label="Material type"
+        aria-invalid={Boolean(error)}
+        aria-describedby={error ? errorId : undefined}
+      />
+      {error ? (
+        <p id={errorId} className="text-xs text-[#a33b2b]">
+          {error}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function FieldError({ id, error }: { id: string; error?: string }) {
+  if (!error) return null;
+  return (
+    <p id={id} className="text-xs text-[#a33b2b]">
+      {error}
+    </p>
+  );
+}
+
 export default function MaterialsPage() {
   const { materials: rows } = useLoaderData<typeof loader>();
   const actionData = useActionData<typeof action>();
   const navigation = useNavigation();
   const busy = navigation.state !== "idle";
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [editKind, setEditKind] = useState("filament");
   const [addOpen, setAddOpen] = useState(false);
+  const [addKind, setAddKind] = useState("filament");
+  const [addErrors, setAddErrors] = useState<MaterialFieldErrors>({});
+  const [editErrors, setEditErrors] = useState<MaterialFieldErrors>({});
   const [pendingDelete, setPendingDelete] = useState<{
     id: string;
     name: string;
   } | null>(null);
   const currencyCode = DEFAULT_SETTINGS.currencyCode;
   const currencySymbol = DEFAULT_SETTINGS.currencySymbol;
-  const createError =
-    actionData && "createError" in actionData && actionData.createError
-      ? actionData.createError
+  const createErrors =
+    actionData && "createErrors" in actionData && actionData.createErrors
+      ? actionData.createErrors
       : null;
+  const createValues =
+    actionData && "createValues" in actionData && actionData.createValues
+      ? actionData.createValues
+      : null;
+  const updateErrors =
+    actionData && "updateErrors" in actionData && actionData.updateErrors
+      ? actionData.updateErrors
+      : null;
+  const updateId =
+    actionData && "updateId" in actionData && actionData.updateId
+      ? actionData.updateId
+      : null;
+  const updateValues =
+    actionData && "updateValues" in actionData && actionData.updateValues
+      ? actionData.updateValues
+      : null;
+  const knownTypes = rows
+    .map((row) => row.type?.trim() ?? "")
+    .filter(Boolean);
+  const activeAddErrors = { ...createErrors, ...addErrors };
+  const activeEditErrors =
+    updateId && editingId === updateId
+      ? { ...updateErrors, ...editErrors }
+      : editErrors;
 
   useEffect(() => {
-    if (createError) setAddOpen(true);
-  }, [createError]);
+    if (createErrors) {
+      setAddOpen(true);
+      setAddErrors({});
+      if (createValues?.kind) setAddKind(createValues.kind);
+    }
+  }, [createErrors, createValues]);
+
+  useEffect(() => {
+    if (updateId && updateErrors) {
+      setEditingId(updateId);
+      setEditErrors({});
+      if (updateValues?.kind) setEditKind(updateValues.kind);
+    }
+  }, [updateId, updateErrors, updateValues]);
+
+  // Same-route redirect keeps local dialog/edit state; close after a successful save.
+  const wasSubmitting = useRef(false);
+  useEffect(() => {
+    if (navigation.state === "submitting") {
+      wasSubmitting.current = true;
+      return;
+    }
+    if (navigation.state !== "idle" || !wasSubmitting.current) return;
+    wasSubmitting.current = false;
+    if (createErrors || updateErrors) return;
+    setAddOpen(false);
+    setAddKind("filament");
+    setAddErrors({});
+    setEditingId(null);
+    setEditErrors({});
+    setPendingDelete(null);
+  }, [navigation.state, createErrors, updateErrors]);
+
+  function validateMaterialSubmit(event: FormEvent<HTMLFormElement>) {
+    const form = event.currentTarget;
+    const parsed = parseMaterialForm(new FormData(form));
+    return parsed.errors;
+  }
 
   return (
     <main className="page-shell">
@@ -241,7 +466,16 @@ export default function MaterialsPage() {
           }}
         />
 
-        <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <Dialog
+          open={addOpen}
+          onOpenChange={(open) => {
+            setAddOpen(open);
+            if (!open) {
+              setAddKind("filament");
+              setAddErrors({});
+            }
+          }}
+        >
           <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle>Add Material</DialogTitle>
@@ -249,48 +483,115 @@ export default function MaterialsPage() {
                 Set a unit price once, then pick it from the calculator.
               </DialogDescription>
             </DialogHeader>
-            <Form method="post" className="grid gap-4 sm:grid-cols-2">
+            <Form
+              method="post"
+              className="grid gap-4 sm:grid-cols-2"
+              key={
+                createValues
+                  ? `add-error-${createValues.name}-${createValues.type}`
+                  : addOpen
+                    ? "add-open"
+                    : "add-closed"
+              }
+              noValidate
+              onSubmit={(event) => {
+                const errors = validateMaterialSubmit(event);
+                if (Object.keys(errors).length > 0) {
+                  event.preventDefault();
+                  setAddErrors(errors);
+                }
+              }}
+            >
               <input type="hidden" name="intent" value="create" />
               <div className="space-y-1.5 sm:col-span-2">
-                <Label htmlFor="name">Name</Label>
+                <Label htmlFor="name">
+                  Name <span className="text-[#a33b2b]">*</span>
+                </Label>
                 <Input
                   id="name"
                   name="name"
-                  required
+                  defaultValue={createValues?.name ?? ""}
                   placeholder="Bambu PETG HF"
+                  aria-invalid={Boolean(activeAddErrors.name)}
+                  aria-describedby={
+                    activeAddErrors.name ? "name-error" : undefined
+                  }
+                  className={cn(activeAddErrors.name && FIELD_ERROR_CLASS)}
+                  onChange={() =>
+                    setAddErrors((prev) => ({ ...prev, name: undefined }))
+                  }
                 />
+                <FieldError id="name-error" error={activeAddErrors.name} />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="kind">Kind</Label>
-                <KindSelect id="kind" name="kind" detailed />
+                <KindSelect
+                  id="kind"
+                  name="kind"
+                  value={addKind}
+                  onValueChange={setAddKind}
+                  detailed
+                />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="type">Type</Label>
-                <Input
+                <Label htmlFor="type">
+                  Type <span className="text-[#a33b2b]">*</span>
+                </Label>
+                <MaterialTypeField
                   id="type"
                   name="type"
-                  placeholder="PETG / Standard Resin"
+                  kind={addKind}
+                  defaultValue={createValues?.type ?? ""}
+                  extraTypes={knownTypes}
+                  error={activeAddErrors.type}
+                  onValueChange={() =>
+                    setAddErrors((prev) => ({ ...prev, type: undefined }))
+                  }
                 />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="color">Color</Label>
-                <ColorField id="color" name="color" />
+                <ColorField
+                  id="color"
+                  name="color"
+                  defaultValue={createValues?.color ?? ""}
+                  error={activeAddErrors.color}
+                  onValueChange={() =>
+                    setAddErrors((prev) => ({ ...prev, color: undefined }))
+                  }
+                />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="pricePerUnit">Price / Unit</Label>
+                <Label htmlFor="pricePerUnit">
+                  Price / Unit <span className="text-[#a33b2b]">*</span>
+                </Label>
                 <MoneyInput
                   id="pricePerUnit"
                   name="pricePerUnit"
                   currencySymbol={currencySymbol}
-                  required
+                  defaultValue={createValues?.pricePerUnit ?? ""}
                   placeholder="750"
+                  aria-invalid={Boolean(activeAddErrors.pricePerUnit)}
+                  aria-describedby={
+                    activeAddErrors.pricePerUnit
+                      ? "pricePerUnit-error"
+                      : undefined
+                  }
+                  className={cn(
+                    activeAddErrors.pricePerUnit && FIELD_ERROR_CLASS,
+                  )}
+                  onChange={() =>
+                    setAddErrors((prev) => ({
+                      ...prev,
+                      pricePerUnit: undefined,
+                    }))
+                  }
+                />
+                <FieldError
+                  id="pricePerUnit-error"
+                  error={activeAddErrors.pricePerUnit}
                 />
               </div>
-              {createError ? (
-                <p className="text-sm text-[#a33b2b] sm:col-span-2">
-                  {createError}
-                </p>
-              ) : null}
               <DialogFooter className="sm:col-span-2">
                 <Button
                   type="button"
@@ -367,17 +668,50 @@ export default function MaterialsPage() {
                       <Form
                         method="post"
                         className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3"
-                        onSubmit={() => setEditingId(null)}
+                        noValidate
+                        onSubmit={(event) => {
+                          const errors = validateMaterialSubmit(event);
+                          if (Object.keys(errors).length > 0) {
+                            event.preventDefault();
+                            setEditErrors(errors);
+                            return;
+                          }
+                          setEditErrors({});
+                        }}
                       >
                         <input type="hidden" name="id" value={row.id} />
                         <input type="hidden" name="intent" value="update" />
                         <div className="space-y-1.5">
-                          <Label htmlFor={`name-${row.id}`}>Name</Label>
+                          <Label htmlFor={`name-${row.id}`}>
+                            Name <span className="text-[#a33b2b]">*</span>
+                          </Label>
                           <Input
                             id={`name-${row.id}`}
                             name="name"
-                            defaultValue={row.name}
-                            required
+                            defaultValue={
+                              updateId === row.id && updateValues
+                                ? updateValues.name
+                                : row.name
+                            }
+                            aria-invalid={Boolean(activeEditErrors.name)}
+                            aria-describedby={
+                              activeEditErrors.name
+                                ? `name-${row.id}-error`
+                                : undefined
+                            }
+                            className={cn(
+                              activeEditErrors.name && FIELD_ERROR_CLASS,
+                            )}
+                            onChange={() =>
+                              setEditErrors((prev) => ({
+                                ...prev,
+                                name: undefined,
+                              }))
+                            }
+                          />
+                          <FieldError
+                            id={`name-${row.id}-error`}
+                            error={activeEditErrors.name}
                           />
                         </div>
                         <div className="space-y-1.5">
@@ -386,14 +720,31 @@ export default function MaterialsPage() {
                             id={`kind-${row.id}`}
                             name="kind"
                             defaultValue={row.kind}
+                            value={editKind}
+                            onValueChange={setEditKind}
                           />
                         </div>
                         <div className="space-y-1.5">
-                          <Label htmlFor={`type-${row.id}`}>Type</Label>
-                          <Input
+                          <Label htmlFor={`type-${row.id}`}>
+                            Type <span className="text-[#a33b2b]">*</span>
+                          </Label>
+                          <MaterialTypeField
                             id={`type-${row.id}`}
                             name="type"
-                            defaultValue={row.type ?? ""}
+                            kind={editKind}
+                            defaultValue={
+                              updateId === row.id && updateValues
+                                ? updateValues.type
+                                : row.type
+                            }
+                            extraTypes={knownTypes}
+                            error={activeEditErrors.type}
+                            onValueChange={() =>
+                              setEditErrors((prev) => ({
+                                ...prev,
+                                type: undefined,
+                              }))
+                            }
                           />
                         </div>
                         <div className="space-y-1.5">
@@ -401,19 +752,56 @@ export default function MaterialsPage() {
                           <ColorField
                             id={`color-${row.id}`}
                             name="color"
-                            defaultValue={row.color}
+                            defaultValue={
+                              updateId === row.id && updateValues
+                                ? updateValues.color
+                                : row.color
+                            }
+                            error={activeEditErrors.color}
+                            onValueChange={() =>
+                              setEditErrors((prev) => ({
+                                ...prev,
+                                color: undefined,
+                              }))
+                            }
                           />
                         </div>
                         <div className="space-y-1.5">
                           <Label htmlFor={`price-${row.id}`}>
-                            Price / {unit}
+                            Price / {unit}{" "}
+                            <span className="text-[#a33b2b]">*</span>
                           </Label>
                           <MoneyInput
                             id={`price-${row.id}`}
                             name="pricePerUnit"
                             currencySymbol={currencySymbol}
-                            defaultValue={row.pricePerUnit}
-                            required
+                            defaultValue={
+                              updateId === row.id && updateValues
+                                ? updateValues.pricePerUnit
+                                : row.pricePerUnit
+                            }
+                            aria-invalid={Boolean(
+                              activeEditErrors.pricePerUnit,
+                            )}
+                            aria-describedby={
+                              activeEditErrors.pricePerUnit
+                                ? `price-${row.id}-error`
+                                : undefined
+                            }
+                            className={cn(
+                              activeEditErrors.pricePerUnit &&
+                                FIELD_ERROR_CLASS,
+                            )}
+                            onChange={() =>
+                              setEditErrors((prev) => ({
+                                ...prev,
+                                pricePerUnit: undefined,
+                              }))
+                            }
+                          />
+                          <FieldError
+                            id={`price-${row.id}-error`}
+                            error={activeEditErrors.pricePerUnit}
                           />
                         </div>
                         <div className="flex items-end gap-2">
@@ -424,7 +812,10 @@ export default function MaterialsPage() {
                             type="button"
                             size="sm"
                             variant="outline"
-                            onClick={() => setEditingId(null)}
+                            onClick={() => {
+                              setEditingId(null);
+                              setEditErrors({});
+                            }}
                           >
                             <X />
                             Cancel
@@ -474,7 +865,11 @@ export default function MaterialsPage() {
                             size="sm"
                             variant="outline"
                             className="w-full sm:w-auto"
-                            onClick={() => setEditingId(row.id)}
+                            onClick={() => {
+                              setEditKind(row.kind);
+                              setEditErrors({});
+                              setEditingId(row.id);
+                            }}
                           >
                             <Pencil />
                             Edit

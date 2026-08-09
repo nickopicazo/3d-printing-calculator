@@ -1,13 +1,17 @@
 import type { Route } from "./+types/sitemap.xml";
-import { PUBLIC_PATHS, absoluteUrl } from "~/lib/seo";
+import { absoluteUrl } from "~/lib/seo";
+import { publicContentPaths } from "~/lib/landing-pages";
+import { guidePaths } from "~/lib/guides";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const origin = new URL(request.url).origin;
   const lastmod = new Date().toISOString().slice(0, 10);
 
-  const urls = PUBLIC_PATHS.map((path) => {
+  const paths = [...new Set([...publicContentPaths(), ...guidePaths()])];
+
+  const urls = paths.map((path) => {
     const loc = absoluteUrl(origin, path);
-    const priority = path === "/" ? "1.0" : "0.6";
+    const priority = path === "/" ? "1.0" : path.startsWith("/guides") ? "0.5" : "0.7";
     const changefreq = path === "/" ? "weekly" : "monthly";
     return `  <url>
     <loc>${loc}</loc>

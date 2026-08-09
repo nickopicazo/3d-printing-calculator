@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm";
-import { CircleHelp, Download, Plus, Printer, Save, Trash2, Upload } from "lucide-react";
+import { CircleHelp, Download, Plus, Printer, Save, Share2, Trash2, Upload } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Link,
@@ -18,6 +18,7 @@ import {
   useImport3mfTourAutoOpen,
 } from "~/components/calculator/import-3mf-tour";
 import { PrintEditor } from "~/components/calculator/print-editor";
+import { ShareCalculationDialog } from "~/components/calculator/share-calculation-dialog";
 import { Combobox } from "~/components/ui/combobox";
 import { ConfirmDeleteDialog } from "~/components/ui/confirm-delete-dialog";
 import { Button } from "~/components/ui/button";
@@ -155,6 +156,7 @@ export default function Home() {
     id: string;
     name: string;
   } | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
   const { open: importTourOpen, setOpen: setImportTourOpen } =
     useImport3mfTourAutoOpen();
   const projectNameRef = useRef<HTMLInputElement>(null);
@@ -756,7 +758,7 @@ export default function Home() {
           <p className="mt-1.5 text-sm text-[var(--color-ink-muted)]">
             Welcome {firstName}
             <span className="mx-1.5 opacity-40">·</span>
-            Estimate FDM &amp; SLA print costs
+            Know exactly what to charge for FDM &amp; SLA prints
           </p>
         </div>
         <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
@@ -1210,7 +1212,7 @@ export default function Home() {
               title={
                 project.prints.length > 1
                   ? `Project Total (${project.prints.length} Prints)`
-                  : "Estimated Total"
+                  : "Recommended selling price"
               }
             />
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
@@ -1222,6 +1224,15 @@ export default function Home() {
               >
                 <Printer />
                 Print Quote
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full flex-1"
+                onClick={() => setShareOpen(true)}
+              >
+                <Share2 />
+                Share
               </Button>
               {loggedIn && project.id ? (
                 <Button asChild variant="outline" className="w-full flex-1">
@@ -1340,6 +1351,12 @@ export default function Home() {
         breakdowns={projectCalc.prints}
         rolled={projectCalc}
         currencySymbol={settings.currencyCode}
+      />
+      <ShareCalculationDialog
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+        settings={settings}
+        project={project}
       />
     </main>
   );

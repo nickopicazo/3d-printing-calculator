@@ -61,6 +61,11 @@ export function AppShell({
   const location = useLocation();
   const [open, setOpen] = useState(false);
 
+  const isEmbed = location.pathname.startsWith("/embed");
+  if (isEmbed) {
+    return <>{children}</>;
+  }
+
   const visible = links.filter((l) => !l.auth || user);
   const feedbackUser = user
     ? { id: user.id, name: user.name, email: user.email }
@@ -290,8 +295,8 @@ export function AppShell({
                 3D Printing Calculator
               </p>
               <p className="text-sm text-[var(--color-ink-muted)]">
-                Free FDM and SLA cost estimator for filament, resin, machine
-                time, labor, electricity, and printable quotes.
+                Free FDM and SLA pricing calculator for makers and 3D printing
+                businesses—know exactly what to charge.
               </p>
             </div>
             <nav
@@ -303,6 +308,24 @@ export function AppShell({
                 className="font-semibold text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
               >
                 Calculator
+              </Link>
+              <Link
+                to="/calculators"
+                className="font-semibold text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
+              >
+                Tools
+              </Link>
+              <Link
+                to="/guides"
+                className="font-semibold text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
+              >
+                Guides
+              </Link>
+              <Link
+                to="/philippines"
+                className="font-semibold text-[var(--color-ink-muted)] hover:text-[var(--color-ink)]"
+              >
+                Philippines
               </Link>
               {userJotProjectId ? (
                 <FeedbackButton

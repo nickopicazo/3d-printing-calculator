@@ -5,7 +5,11 @@ export async function loader({ request }: Route.LoaderArgs) {
   const body = `# ${origin}
 User-agent: *
 Allow: /
-Allow: /login
+Allow: /calculators
+Allow: /printers
+Allow: /filament
+Allow: /guides
+Allow: /philippines
 Allow: /favicon.svg
 Allow: /og-image.png
 Allow: /site.webmanifest
@@ -13,12 +17,15 @@ Allow: /site.webmanifest
 Disallow: /api/
 Disallow: /uploads/
 Disallow: /logout
+Disallow: /login
 Disallow: /projects
 Disallow: /materials
 Disallow: /customers
 Disallow: /filaments
 Disallow: /clients
 Disallow: /quotes
+Disallow: /c/
+Disallow: /embed
 
 Sitemap: ${origin}/sitemap.xml
 `;

@@ -62,10 +62,12 @@ export function AddonsEditor({
 
       <div className="flex items-center gap-2">
         <Package
-          className="size-4 text-[var(--color-ink)]"
+          className="size-4 shrink-0 text-[var(--color-ink)]"
           aria-hidden
         />
-        <Label className="text-base font-semibold">Addons</Label>
+        <span className="text-base font-semibold leading-none text-[var(--color-ink)]">
+          Addons
+        </span>
       </div>
 
       <div className="space-y-3 rounded-2xl border border-[var(--color-line)] bg-[var(--color-paper)]/40 p-3 sm:p-4">

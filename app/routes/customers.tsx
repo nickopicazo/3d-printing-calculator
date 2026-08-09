@@ -1,6 +1,6 @@
 import { and, desc, eq } from "drizzle-orm";
 import { Plus } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   Form,
   Link,
@@ -34,6 +34,53 @@ import { db } from "~/db/index.server";
 import { customers, projects } from "~/db/schema";
 import { withParentMeta } from "~/lib/seo";
 import { newId, requireUser } from "~/lib/session.server";
+import { isValidEmail } from "~/lib/validate-project";
+import { cn } from "~/lib/utils";
+
+const FIELD_ERROR_CLASS =
+  "border-[#e8c4be] focus:border-[#a33b2b] focus:shadow-[0_0_0_3px_rgba(163,59,43,0.15)]";
+
+type CustomerFieldErrors = {
+  name?: string;
+  email?: string;
+};
+
+type CustomerFormValues = {
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+};
+
+function parseCustomerForm(form: FormData): {
+  values: CustomerFormValues;
+  errors: CustomerFieldErrors;
+} {
+  const name = String(form.get("name") ?? "").trim();
+  const email = String(form.get("email") ?? "").trim();
+  const phone = String(form.get("phone") ?? "").trim();
+  const address = String(form.get("address") ?? "").trim();
+
+  const errors: CustomerFieldErrors = {};
+  if (!name) errors.name = "Name is required.";
+  if (email && !isValidEmail(email)) {
+    errors.email = "Enter a valid email address.";
+  }
+
+  return {
+    values: { name, email, phone, address },
+    errors,
+  };
+}
+
+function FieldError({ id, error }: { id: string; error?: string }) {
+  if (!error) return null;
+  return (
+    <p id={id} className="text-xs text-[#a33b2b]">
+      {error}
+    </p>
+  );
+}
 
 export function meta({ matches }: Route.MetaArgs) {
   return withParentMeta(matches, [
@@ -70,18 +117,17 @@ export async function action({ request }: Route.ActionArgs) {
   const intent = String(form.get("intent") ?? "");
 
   if (intent === "create-customer") {
-    const name = String(form.get("name") ?? "").trim();
-    const email = String(form.get("email") ?? "").trim() || null;
-    const phone = String(form.get("phone") ?? "").trim() || null;
-    const address = String(form.get("address") ?? "").trim() || null;
-    if (!name) return { createError: "Customer name is required." };
+    const parsed = parseCustomerForm(form);
+    if (Object.keys(parsed.errors).length > 0) {
+      return { createErrors: parsed.errors, createValues: parsed.values };
+    }
     await db.insert(customers).values({
       id: newId(),
       userId: session.user.id,
-      name,
-      email,
-      phone,
-      address,
+      name: parsed.values.name,
+      email: parsed.values.email || null,
+      phone: parsed.values.phone || null,
+      address: parsed.values.address || null,
     });
     return redirect("/customers");
   }
@@ -128,18 +174,50 @@ export default function CustomersPage() {
   const navigation = useNavigation();
   const busy = navigation.state !== "idle";
   const [addOpen, setAddOpen] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<CustomerFieldErrors>({});
   const [pendingDelete, setPendingDelete] = useState<{
     id: string;
     name: string;
   } | null>(null);
-  const createError =
-    actionData && "createError" in actionData && actionData.createError
-      ? actionData.createError
+  const createErrors =
+    actionData && "createErrors" in actionData && actionData.createErrors
+      ? actionData.createErrors
       : null;
+  const createValues =
+    actionData && "createValues" in actionData && actionData.createValues
+      ? actionData.createValues
+      : null;
+  const activeErrors = { ...createErrors, ...fieldErrors };
 
   useEffect(() => {
-    if (createError) setAddOpen(true);
-  }, [createError]);
+    if (createErrors) {
+      setAddOpen(true);
+      setFieldErrors({});
+    }
+  }, [createErrors]);
+
+  // Same-route redirect keeps local dialog state; close after a successful save.
+  const wasSubmitting = useRef(false);
+  useEffect(() => {
+    if (navigation.state === "submitting") {
+      wasSubmitting.current = true;
+      return;
+    }
+    if (navigation.state !== "idle" || !wasSubmitting.current) return;
+    wasSubmitting.current = false;
+    if (createErrors) return;
+    setAddOpen(false);
+    setFieldErrors({});
+    setPendingDelete(null);
+  }, [navigation.state, createErrors]);
+
+  function onAddSubmit(event: FormEvent<HTMLFormElement>) {
+    const parsed = parseCustomerForm(new FormData(event.currentTarget));
+    if (Object.keys(parsed.errors).length > 0) {
+      event.preventDefault();
+      setFieldErrors(parsed.errors);
+    }
+  }
 
   return (
     <main className="page-shell">
@@ -165,7 +243,13 @@ export default function CustomersPage() {
           }}
         />
 
-        <Dialog open={addOpen} onOpenChange={setAddOpen}>
+        <Dialog
+          open={addOpen}
+          onOpenChange={(open) => {
+            setAddOpen(open);
+            if (!open) setFieldErrors({});
+          }}
+        >
           <DialogContent className="max-w-lg">
             <DialogHeader>
               <DialogTitle>Add Customer</DialogTitle>
@@ -173,29 +257,77 @@ export default function CustomersPage() {
                 Name, contact, and address for invoicing.
               </DialogDescription>
             </DialogHeader>
-            <Form method="post" className="grid gap-4 sm:grid-cols-2">
+            <Form
+              method="post"
+              className="grid gap-4 sm:grid-cols-2"
+              key={
+                createValues
+                  ? `add-error-${createValues.name}-${createValues.email}`
+                  : addOpen
+                    ? "add-open"
+                    : "add-closed"
+              }
+              noValidate
+              onSubmit={onAddSubmit}
+            >
               <input type="hidden" name="intent" value="create-customer" />
               <div className="space-y-1.5 sm:col-span-2">
-                <Label htmlFor="name">Name</Label>
-                <Input id="name" name="name" required />
+                <Label htmlFor="name">
+                  Name <span className="text-[#a33b2b]">*</span>
+                </Label>
+                <Input
+                  id="name"
+                  name="name"
+                  defaultValue={createValues?.name ?? ""}
+                  aria-invalid={Boolean(activeErrors.name)}
+                  aria-describedby={
+                    activeErrors.name ? "customer-name-error" : undefined
+                  }
+                  className={cn(activeErrors.name && FIELD_ERROR_CLASS)}
+                  onChange={() =>
+                    setFieldErrors((prev) => ({ ...prev, name: undefined }))
+                  }
+                />
+                <FieldError id="customer-name-error" error={activeErrors.name} />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" name="email" type="email" />
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  defaultValue={createValues?.email ?? ""}
+                  aria-invalid={Boolean(activeErrors.email)}
+                  aria-describedby={
+                    activeErrors.email ? "customer-email-error" : undefined
+                  }
+                  className={cn(activeErrors.email && FIELD_ERROR_CLASS)}
+                  onChange={() =>
+                    setFieldErrors((prev) => ({ ...prev, email: undefined }))
+                  }
+                />
+                <FieldError
+                  id="customer-email-error"
+                  error={activeErrors.email}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="phone">Phone</Label>
-                <Input id="phone" name="phone" />
+                <Input
+                  id="phone"
+                  name="phone"
+                  defaultValue={createValues?.phone ?? ""}
+                />
               </div>
               <div className="space-y-1.5 sm:col-span-2">
                 <Label htmlFor="address">Address</Label>
-                <Textarea id="address" name="address" rows={2} />
+                <Textarea
+                  id="address"
+                  name="address"
+                  rows={2}
+                  defaultValue={createValues?.address ?? ""}
+                />
               </div>
-              {createError ? (
-                <p className="text-sm text-[#a33b2b] sm:col-span-2">
-                  {createError}
-                </p>
-              ) : null}
               <DialogFooter className="sm:col-span-2">
                 <Button
                   type="button"
@@ -215,7 +347,9 @@ export default function CustomersPage() {
 
         <header className="mb-6 flex flex-col gap-4 animate-fade-up sm:mb-8 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
           <div className="min-w-0">
-            <h1 className="font-display text-2xl font-extrabold sm:text-3xl">Customers</h1>
+            <h1 className="font-display text-2xl font-extrabold sm:text-3xl">
+              Customers
+            </h1>
             <p className="mt-2 text-sm text-[var(--color-ink-muted)] sm:text-base">
               Save contact details and attach projects for invoicing.
             </p>

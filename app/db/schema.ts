@@ -276,6 +276,15 @@ export const quotesRelations = relations(quotes, ({ one }) => ({
   }),
 }));
 
+/** Public shareable calculation snapshots (guest-friendly). */
+export const shares = pgTable("shares", {
+  id: text("id").primaryKey(),
+  code: text("code").notNull().unique(),
+  payload: jsonb("payload").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  expiresAt: timestamp("expires_at"),
+});
+
 export type Customer = typeof customers.$inferSelect;
 export type Project = typeof projects.$inferSelect;
 export type Material = typeof materials.$inferSelect;
@@ -284,6 +293,7 @@ export type PrintMaterial = typeof printMaterials.$inferSelect;
 export type PrintAddon = typeof printAddons.$inferSelect;
 export type PrintPlate = typeof printPlates.$inferSelect;
 export type Quote = typeof quotes.$inferSelect;
+export type Share = typeof shares.$inferSelect;
 
 /** Legacy aliases during migration of call sites */
 export type Client = Customer;

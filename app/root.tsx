@@ -58,8 +58,10 @@ export function headers() {
   return {
     "X-Content-Type-Options": "nosniff",
     "Referrer-Policy": "strict-origin-when-cross-origin",
-    "X-Frame-Options": "DENY",
     "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+    // CSP only — embed routes override frame-ancestors. Avoid X-Frame-Options
+    // so /embed can be framed by third-party sites.
+    "Content-Security-Policy": "frame-ancestors 'self'",
   };
 }
 

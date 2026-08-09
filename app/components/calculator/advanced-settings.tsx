@@ -7,6 +7,7 @@ import {
   CollapsibleTrigger,
 } from "~/components/ui/collapsible";
 import { LabelWithHelp } from "~/components/ui/field-help";
+import { TimeInput } from "~/components/ui/hours-input";
 import { Input } from "~/components/ui/input";
 import { MoneyInput } from "~/components/ui/money-input";
 import {
@@ -204,9 +205,8 @@ export function AdvancedSettingsPanel({ settings, onChange, showSla }: Props) {
             >
               Lifespan (Hours)
             </LabelWithHelp>
-            <Input
+            <TimeInput
               id="lifespan"
-              type="number"
               min={0}
               value={settings.printerLifespanHours}
               onChange={(e) =>

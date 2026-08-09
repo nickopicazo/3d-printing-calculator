@@ -111,7 +111,7 @@ export function PrintEditor({
       </div>
 
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="space-y-1.5">
+        <div className="w-1/2 min-w-0 space-y-1.5">
           <Label htmlFor={`part-${print.id}`}>
             Part / File Name <span className="text-[#a33b2b]">*</span>
           </Label>
@@ -124,8 +124,8 @@ export function PrintEditor({
             onChange={(e) => onChange({ ...print, name: e.target.value })}
             className={
               nameError
-                ? "min-w-[200px] border-[#e8c4be] focus:border-[#a33b2b] focus:shadow-[0_0_0_3px_rgba(163,59,43,0.15)]"
-                : "min-w-[200px]"
+                ? "w-full border-[#e8c4be] focus:border-[#a33b2b] focus:shadow-[0_0_0_3px_rgba(163,59,43,0.15)]"
+                : "w-full"
             }
           />
           {nameError ? (

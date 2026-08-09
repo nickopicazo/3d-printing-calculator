@@ -123,6 +123,141 @@ export const DEFAULT_SETTINGS: AppSettings = {
   defaultResinPricePerLitre: 2500,
 };
 
+/**
+ * ISO 3166-1 alpha-2 → ISO 4217 for locale maximize() when
+ * Intl.Locale#getCurrencies is unavailable.
+ */
+const REGION_CURRENCY: Record<string, string> = {
+  AE: "AED",
+  AR: "ARS",
+  AT: "EUR",
+  AU: "AUD",
+  BE: "EUR",
+  BG: "BGN",
+  BH: "BHD",
+  BR: "BRL",
+  CA: "CAD",
+  CH: "CHF",
+  CL: "CLP",
+  CN: "CNY",
+  CO: "COP",
+  CZ: "CZK",
+  DE: "EUR",
+  DK: "DKK",
+  EG: "EGP",
+  ES: "EUR",
+  FI: "EUR",
+  FR: "EUR",
+  GB: "GBP",
+  GR: "EUR",
+  HK: "HKD",
+  HU: "HUF",
+  ID: "IDR",
+  IE: "EUR",
+  IL: "ILS",
+  IN: "INR",
+  IT: "EUR",
+  JP: "JPY",
+  KE: "KES",
+  KR: "KRW",
+  KW: "KWD",
+  MX: "MXN",
+  MY: "MYR",
+  NG: "NGN",
+  NL: "EUR",
+  NO: "NOK",
+  NZ: "NZD",
+  PH: "PHP",
+  PK: "PKR",
+  PL: "PLN",
+  PT: "EUR",
+  QA: "QAR",
+  RO: "RON",
+  RU: "RUB",
+  SA: "SAR",
+  SE: "SEK",
+  SG: "SGD",
+  TH: "THB",
+  TR: "TRY",
+  TW: "TWD",
+  UA: "UAH",
+  US: "USD",
+  VN: "VND",
+  ZA: "ZAR",
+};
+
+function isSupportedCurrencyCode(code: string): boolean {
+  const upper = code.toUpperCase();
+  if (
+    typeof Intl !== "undefined" &&
+    "supportedValuesOf" in Intl &&
+    typeof Intl.supportedValuesOf === "function"
+  ) {
+    try {
+      return (Intl.supportedValuesOf("currency") as string[]).includes(upper);
+    } catch {
+      // fall through
+    }
+  }
+  try {
+    currencySymbolForCode(upper);
+    return /^[A-Z]{3}$/.test(upper);
+  } catch {
+    return false;
+  }
+}
+
+type LocaleWithCurrencies = Intl.Locale & {
+  getCurrencies?: () => string[];
+};
+
+/**
+ * Infer an ISO 4217 currency from browser language tags (region / locale info).
+ * Returns null when nothing reliable can be resolved.
+ */
+export function detectLocaleCurrencyCode(
+  languages: readonly string[] = typeof navigator !== "undefined"
+    ? [
+        ...(navigator.languages?.length
+          ? navigator.languages
+          : []),
+        navigator.language,
+      ].filter(Boolean)
+    : [],
+): string | null {
+  const seen = new Set<string>();
+
+  for (const tag of languages) {
+    const normalized = tag.trim();
+    if (!normalized || seen.has(normalized)) continue;
+    seen.add(normalized);
+
+    try {
+      const locale = new Intl.Locale(normalized) as LocaleWithCurrencies;
+      const maximized = (
+        typeof locale.maximize === "function" ? locale.maximize() : locale
+      ) as LocaleWithCurrencies;
+
+      if (typeof maximized.getCurrencies === "function") {
+        for (const code of maximized.getCurrencies()) {
+          const upper = code?.toUpperCase?.() ?? "";
+          if (upper && isSupportedCurrencyCode(upper)) return upper;
+        }
+      }
+
+      const region = maximized.region?.toUpperCase();
+      if (region) {
+        const mapped = REGION_CURRENCY[region];
+        if (mapped && isSupportedCurrencyCode(mapped)) return mapped;
+      }
+    } catch {
+      // ignore invalid language tags
+    }
+  }
+
+  return null;
+}
+
 /** Bump when defaults change so stale localStorage cannot revive old rates. */
 const STORAGE_KEY = "printcost:settings:v4";
 
@@ -231,12 +366,18 @@ export function loadSettings(): AppSettings {
 
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return { ...DEFAULT_SETTINGS };
-    const parsed = JSON.parse(raw) as Partial<AppSettings>;
-    return normalizeSettings(parsed);
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<AppSettings>;
+      return normalizeSettings(parsed);
+    }
   } catch {
-    return { ...DEFAULT_SETTINGS };
+    // fall through to locale default
   }
+
+  // First visit only: guess currency from browser locale; never override saved prefs.
+  // USD when locale cannot be mapped (SSR / unknown region still use DEFAULT_SETTINGS).
+  const detected = detectLocaleCurrencyCode() ?? "USD";
+  return normalizeSettings({ currencyCode: detected });
 }
 
 export function saveSettings(settings: AppSettings): void {

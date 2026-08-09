@@ -64,7 +64,7 @@ export function PrintEditor({
   }
 
   return (
-    <div className={embedded ? "space-y-4" : "dash-card space-y-4"}>
+    <div className={embedded ? "space-y-6" : "dash-card space-y-6"}>
       <ConfirmDeleteDialog
         open={confirmRemove}
         title="Remove Print"
@@ -111,7 +111,7 @@ export function PrintEditor({
       </div>
 
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="w-1/2 min-w-0 space-y-1.5">
+        <div className="w-1/2 min-w-0 space-y-2">
           <Label htmlFor={`part-${print.id}`}>
             Part / File Name <span className="text-[#a33b2b]">*</span>
           </Label>
@@ -171,8 +171,8 @@ export function PrintEditor({
         </div>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="space-y-1.5">
+      <div className="grid gap-4 sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+        <div className="space-y-2">
           <Label htmlFor={`printer-${print.id}`}>Printer</Label>
           <Combobox
             id={`printer-${print.id}`}
@@ -184,8 +184,8 @@ export function PrintEditor({
             allowCustom
           />
         </div>
-        <div className="grid grid-cols-2 gap-2">
-          <div className="space-y-1.5">
+        <div className="grid grid-cols-3 gap-3">
+          <div className="space-y-2">
             <LabelWithHelp
               htmlFor={`ph-${print.id}`}
               tip="Print time drives machine and electricity cost."
@@ -204,7 +204,7 @@ export function PrintEditor({
                 </>
               }
             >
-              Print Hours
+              Hours
             </LabelWithHelp>
             <Input
               id={`ph-${print.id}`}
@@ -216,7 +216,7 @@ export function PrintEditor({
               }
             />
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label htmlFor={`pm-${print.id}`}>Minutes</Label>
             <Input
               id={`pm-${print.id}`}
@@ -232,6 +232,42 @@ export function PrintEditor({
               }
             />
           </div>
+          <div className="space-y-2">
+            <LabelWithHelp
+              htmlFor={`labor-${print.id}`}
+              tip="Needs Labor Rate / Hour in Advanced Settings to affect cost."
+              title="Labor time"
+              details={
+                <>
+                  <p>
+                    Labor cost = (labor minutes ÷ 60) × Labor Rate / Hour from
+                    Advanced Settings.
+                  </p>
+                  <p>
+                    Current rate: {settings.currencySymbol}
+                    {settings.laborRatePerHour}/hr
+                    {settings.laborRatePerHour <= 0
+                      ? " — set a rate above 0 or this field will not change the total."
+                      : "."}
+                  </p>
+                </>
+              }
+            >
+              Labor (Min)
+            </LabelWithHelp>
+            <Input
+              id={`labor-${print.id}`}
+              type="number"
+              min={0}
+              value={print.laborMinutes}
+              onChange={(e) =>
+                onChange({
+                  ...print,
+                  laborMinutes: Number(e.target.value) || 0,
+                })
+              }
+            />
+          </div>
         </div>
       </div>
 
@@ -243,40 +279,6 @@ export function PrintEditor({
         currencySymbol={settings.currencySymbol}
         onChange={(materials) => onChange({ ...print, materials })}
       />
-
-      <div className="max-w-xs space-y-1.5">
-        <LabelWithHelp
-          htmlFor={`labor-${print.id}`}
-          tip="Needs Labor Rate / Hour in Advanced Settings to affect cost."
-          title="Labor time"
-          details={
-            <>
-              <p>
-                Labor cost = (labor minutes ÷ 60) × Labor Rate / Hour from
-                Advanced Settings.
-              </p>
-              <p>
-                Current rate: {settings.currencySymbol}
-                {settings.laborRatePerHour}/hr
-                {settings.laborRatePerHour <= 0
-                  ? " — set a rate above 0 or this field will not change the total."
-                  : "."}
-              </p>
-            </>
-          }
-        >
-          Labor Time (Min)
-        </LabelWithHelp>
-        <Input
-          id={`labor-${print.id}`}
-          type="number"
-          min={0}
-          value={print.laborMinutes}
-          onChange={(e) =>
-            onChange({ ...print, laborMinutes: Number(e.target.value) || 0 })
-          }
-        />
-      </div>
 
       <AddonsEditor
         addons={print.addons}

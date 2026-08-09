@@ -146,7 +146,7 @@ function ColorField({
       <input
         type="color"
         aria-label="Color swatch"
-        className="h-10 w-12 shrink-0 cursor-pointer rounded-xl border border-[var(--color-line)] bg-[#fafafa] p-1"
+        className="h-10 w-12 shrink-0 cursor-pointer rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] p-1"
         value={normalizeHex(hex) ?? "#CCCCCC"}
         onChange={(e) => setHex(e.target.value.toUpperCase())}
       />

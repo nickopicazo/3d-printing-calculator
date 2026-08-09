@@ -50,13 +50,13 @@ export function AdvancedSettingsPanel({ settings, onChange, showSla }: Props) {
           />
         </Button>
       </CollapsibleTrigger>
-      <CollapsibleContent className="space-y-4 border-t border-[var(--color-line)] px-5 py-4">
+      <CollapsibleContent className="space-y-5 border-t border-[var(--color-line)] px-5 py-4">
         <p className="text-sm text-[var(--color-ink-muted)]">
           Optional. Leave at 0 to exclude from the estimate — electricity,
           labor rate, failure uplift, and depreciation helpers.
         </p>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="space-y-1.5">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-2">
             <LabelWithHelp
               htmlFor="power-w"
               tip="Used with Electricity / kWh and print time."
@@ -84,7 +84,7 @@ export function AdvancedSettingsPanel({ settings, onChange, showSla }: Props) {
               onChange={(e) => set("powerWatts", Number(e.target.value) || 0)}
             />
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <LabelWithHelp
               htmlFor="kwh"
               tip="Used with Power (W) and print time."
@@ -112,7 +112,7 @@ export function AdvancedSettingsPanel({ settings, onChange, showSla }: Props) {
               }
             />
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <LabelWithHelp
               htmlFor="labor-rate"
               tip="Required for Labor Time on each print to affect cost."
@@ -141,7 +141,7 @@ export function AdvancedSettingsPanel({ settings, onChange, showSla }: Props) {
               }
             />
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <LabelWithHelp
               htmlFor="failure"
               tip="Adds a % buffer on top of landed print cost."
@@ -165,7 +165,7 @@ export function AdvancedSettingsPanel({ settings, onChange, showSla }: Props) {
               }
             />
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <LabelWithHelp
               htmlFor="purchase"
               tip="Only used to suggest Machine Rate / Hr — not billed directly."
@@ -189,7 +189,7 @@ export function AdvancedSettingsPanel({ settings, onChange, showSla }: Props) {
               }
             />
           </div>
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <LabelWithHelp
               htmlFor="lifespan"
               tip="Only used to suggest Machine Rate / Hr — not billed directly."
@@ -232,8 +232,8 @@ export function AdvancedSettingsPanel({ settings, onChange, showSla }: Props) {
           </div>
         ) : null}
         {showSla ? (
-          <div className="grid gap-3 border-t border-[var(--color-line)] pt-4 sm:grid-cols-2">
-            <div className="space-y-1.5">
+          <div className="grid gap-4 border-t border-[var(--color-line)] pt-4 sm:grid-cols-2">
+            <div className="space-y-2">
               <LabelWithHelp
                 htmlFor="sla-consumables"
                 tip="Flat cost added once per SLA print."
@@ -257,7 +257,7 @@ export function AdvancedSettingsPanel({ settings, onChange, showSla }: Props) {
                 }
               />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <LabelWithHelp
                 htmlFor="sla-waste"
                 tip="Increases resin quantity for supports / waste."

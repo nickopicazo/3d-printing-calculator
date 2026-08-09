@@ -80,7 +80,7 @@ export function Combobox({
           aria-expanded={open}
           aria-label={ariaLabel ?? placeholder}
           className={cn(
-            "w-full justify-between font-normal",
+            "h-10 w-full justify-between rounded-xl bg-[var(--color-field)] px-3 font-normal shadow-none hover:bg-[var(--color-field)] focus-visible:border-[var(--color-accent)] focus-visible:shadow-[0_0_0_3px_rgba(111,82,240,0.18)] focus-visible:ring-0 focus-visible:ring-offset-0",
             !value && "text-[var(--color-ink-muted)]",
             className,
           )}

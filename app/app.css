@@ -25,6 +25,7 @@
   --color-ink-muted: #6b6b76;
   --color-paper: #f0f0f2;
   --color-panel: #ffffff;
+  --color-field: #ffffff;
   --color-line: #e4e4e8;
   /* #6f52f0 meets WCAG AA (4.5:1) with white button text; old #7c5cff was 4.34 */
   --color-accent: #6f52f0;
@@ -290,7 +291,7 @@ body {
 .field-input {
   width: 100%;
   border: 1px solid var(--color-line);
-  background: #fafafa;
+  background: var(--color-field);
   border-radius: 0.875rem;
   padding: 0.55rem 0.75rem;
   font-size: 0.95rem;

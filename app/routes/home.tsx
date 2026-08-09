@@ -805,9 +805,9 @@ export default function Home() {
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px]">
         <div className="space-y-5">
-          <div className="dash-card space-y-4">
-            <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_13rem]">
-              <div className="space-y-1.5">
+          <div className="dash-card space-y-5">
+            <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_13rem]">
+              <div className="space-y-2">
                 <Label htmlFor="project-name">
                   Project Name <span className="text-[#a33b2b]">*</span>
                 </Label>
@@ -846,7 +846,7 @@ export default function Home() {
                   </p>
                 ) : null}
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <Label htmlFor="currency">Currency</Label>
                 <Combobox
                   id="currency"
@@ -870,8 +870,8 @@ export default function Home() {
                 />
               </div>
             </div>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <div className="space-y-1.5">
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="space-y-2">
                 <LabelWithHelp
                   htmlFor="machine-rate"
                   tip="Needs print time on each print to affect cost."
@@ -903,7 +903,7 @@ export default function Home() {
                   }
                 />
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <LabelWithHelp
                   htmlFor="service-fee"
                   tip="Percent is per print; Fixed is once per project."
@@ -978,7 +978,7 @@ export default function Home() {
                   </InputGroupAddon>
                 </InputGroup>
               </div>
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <LabelWithHelp
                   htmlFor="vat"
                   tip="Applied to the pre-VAT total (costs + fees)."
@@ -1116,7 +1116,7 @@ export default function Home() {
                     <TabsContent
                       key={print.id}
                       value={print.id}
-                      className="mt-0 space-y-4 p-4 sm:p-6"
+                      className="mt-0 space-y-6 p-4 sm:p-6"
                     >
                       <PrintEditor
                         print={print}

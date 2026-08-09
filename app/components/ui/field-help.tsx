@@ -100,7 +100,7 @@ export function LabelWithHelp({
   className,
 }: LabelWithHelpProps) {
   return (
-    <div className={cn("mb-1.5 flex items-center gap-1", className)}>
+    <div className={cn("flex items-center gap-1", className)}>
       <Label htmlFor={htmlFor} className="mb-0">
         {children}
       </Label>

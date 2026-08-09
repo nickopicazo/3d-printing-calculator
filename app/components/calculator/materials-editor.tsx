@@ -135,7 +135,7 @@ export function MaterialsEditor({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <ConfirmDeleteDialog
         open={pendingDelete != null}
         title="Remove Material"
@@ -190,8 +190,8 @@ export function MaterialsEditor({
             key={line.id}
             className="rounded-2xl border border-[var(--color-line)] bg-[var(--color-paper)]/40 p-3 sm:p-4"
           >
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-              <div className="min-w-0 flex-[1.4] space-y-1.5">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+              <div className="min-w-0 flex-[1.4] space-y-2">
                 <Label htmlFor={materialId} className="text-xs">
                   Material
                 </Label>
@@ -214,11 +214,11 @@ export function MaterialsEditor({
                 />
               </div>
 
-              <div className="w-full space-y-1.5 sm:w-[9.5rem]">
+              <div className="w-full space-y-2 sm:w-[9.5rem]">
                 <Label htmlFor={colorTextId} className="text-xs">
                   Color
                 </Label>
-                <div className="flex h-10 items-center gap-2 rounded-xl border border-[var(--color-line)] bg-[#fafafa] px-2">
+                <div className="flex h-10 items-center gap-2 rounded-xl border border-[var(--color-line)] bg-[var(--color-field)] px-2">
                   <label
                     className={cn(
                       "relative size-6 shrink-0 overflow-hidden rounded-md border border-[var(--color-line)]",
@@ -264,7 +264,7 @@ export function MaterialsEditor({
                 </div>
               </div>
 
-              <div className="w-full space-y-1.5 sm:w-32">
+              <div className="w-full space-y-2 sm:w-32">
                 <Label htmlFor={priceId} className="text-xs">
                   {priceLabel}
                 </Label>
@@ -281,7 +281,7 @@ export function MaterialsEditor({
                 />
               </div>
 
-              <div className="w-full space-y-1.5 sm:w-28">
+              <div className="w-full space-y-2 sm:w-28">
                 <Label htmlFor={qtyId} className="text-xs">
                   {technology === "sla" ? "Volume" : "Weight"} ({unitLabel})
                 </Label>

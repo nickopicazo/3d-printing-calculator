@@ -27,7 +27,7 @@ export function CustomerSection({
   const options = saved.map((c) => ({ value: c.id, label: c.name }));
 
   return (
-    <div className="dash-card space-y-3">
+    <div className="dash-card space-y-5">
       <div className="flex items-center justify-between gap-2">
         <h3 className="font-display text-lg font-bold">Customer</h3>
         {loggedIn && onSave ? (
@@ -42,8 +42,8 @@ export function CustomerSection({
           </Button>
         ) : null}
       </div>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="space-y-1.5 sm:col-span-2">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-2 sm:col-span-2">
           <Label>Customer Name</Label>
           {saved.length > 0 ? (
             <Combobox
@@ -76,7 +76,7 @@ export function CustomerSection({
             />
           )}
         </div>
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <Label htmlFor="cust-email">Email</Label>
           <Input
             id="cust-email"
@@ -97,7 +97,7 @@ export function CustomerSection({
             </p>
           ) : null}
         </div>
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           <Label htmlFor="cust-phone">Phone</Label>
           <Input
             id="cust-phone"
@@ -105,7 +105,7 @@ export function CustomerSection({
             onChange={(e) => onChange({ ...customer, phone: e.target.value })}
           />
         </div>
-        <div className="space-y-1.5 sm:col-span-2">
+        <div className="space-y-2 sm:col-span-2">
           <Label htmlFor="cust-address">Address</Label>
           <Textarea
             id="cust-address"

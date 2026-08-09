@@ -2,6 +2,7 @@ import type { PlateImport } from "~/lib/gcode/loadFromArchive";
 import {
   createEmptyMaterial,
   createId,
+  type AddonLine,
   type MaterialLine,
   type Technology,
 } from "~/lib/pricing";
@@ -24,12 +25,13 @@ export type PrintDraft = {
   printHours: number;
   printMinutesPart: number;
   laborMinutes: number;
-  hardwareCost: number;
-  packagingCost: number;
+  addons: AddonLine[];
   materials: MaterialLine[];
   plates: PlateImport[];
   metadataSnapshot: Record<string, unknown> | null;
 };
+
+export type { AddonLine };
 
 export type ProjectDraft = {
   id: string | null;
@@ -67,8 +69,7 @@ export function emptyPrint(
     printHours: 0,
     printMinutesPart: 0,
     laborMinutes: 0,
-    hardwareCost: 0,
-    packagingCost: 0,
+    addons: [],
     materials: [
       createEmptyMaterial(technology, price, undefined, ids?.materialId),
     ],

@@ -1,8 +1,11 @@
 import { Upload } from "lucide-react";
+import { useState } from "react";
+import { AddonsEditor } from "~/components/calculator/addons-editor";
 import { remapMaterialsForTech } from "~/components/calculator/materials-editor";
 import { MaterialsEditor } from "~/components/calculator/materials-editor";
 import { Button } from "~/components/ui/button";
 import { Combobox } from "~/components/ui/combobox";
+import { ConfirmDeleteDialog } from "~/components/ui/confirm-delete-dialog";
 import { LabelWithHelp } from "~/components/ui/field-help";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
@@ -42,6 +45,7 @@ export function PrintEditor({
   embedded = false,
   nameError,
 }: Props) {
+  const [confirmRemove, setConfirmRemove] = useState(false);
   const defaultPrice =
     print.technology === "sla"
       ? settings.defaultResinPricePerLitre
@@ -61,6 +65,19 @@ export function PrintEditor({
 
   return (
     <div className={embedded ? "space-y-4" : "dash-card space-y-4"}>
+      <ConfirmDeleteDialog
+        open={confirmRemove}
+        title="Remove Print"
+        description={`Remove “${print.name.trim() || "this print"}”?`}
+        confirmLabel="Remove"
+        confirmingLabel="Removing…"
+        onOpenChange={setConfirmRemove}
+        onConfirm={() => {
+          onRemove?.();
+          setConfirmRemove(false);
+        }}
+      />
+
       <div
         role="radiogroup"
         aria-label="Print technology"
@@ -146,7 +163,7 @@ export function PrintEditor({
               type="button"
               variant="destructive"
               className="w-full sm:w-auto"
-              onClick={onRemove}
+              onClick={() => setConfirmRemove(true)}
             >
               Remove Print
             </Button>
@@ -226,78 +243,44 @@ export function PrintEditor({
         onChange={(materials) => onChange({ ...print, materials })}
       />
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div className="space-y-1.5">
-          <LabelWithHelp
-            htmlFor={`labor-${print.id}`}
-            tip="Needs Labor Rate / Hour in Advanced Settings to affect cost."
-            title="Labor time"
-            details={
-              <>
-                <p>
-                  Labor cost = (labor minutes ÷ 60) × Labor Rate / Hour from
-                  Advanced Settings.
-                </p>
-                <p>
-                  Current rate: {settings.currencySymbol}
-                  {settings.laborRatePerHour}/hr
-                  {settings.laborRatePerHour <= 0
-                    ? " — set a rate above 0 or this field will not change the total."
-                    : "."}
-                </p>
-              </>
-            }
-          >
-            Labor Time (Min)
-          </LabelWithHelp>
-          <Input
-            id={`labor-${print.id}`}
-            type="number"
-            min={0}
-            value={print.laborMinutes}
-            onChange={(e) =>
-              onChange({ ...print, laborMinutes: Number(e.target.value) || 0 })
-            }
-          />
-        </div>
-        <div className="space-y-1.5">
-          <LabelWithHelp
-            htmlFor={`hw-${print.id}`}
-            tip="Flat add-on (screws, inserts, etc.). No hourly rate."
-          >
-            Hardware Cost
-          </LabelWithHelp>
-          <Input
-            id={`hw-${print.id}`}
-            type="number"
-            min={0}
-            value={print.hardwareCost}
-            onChange={(e) =>
-              onChange({ ...print, hardwareCost: Number(e.target.value) || 0 })
-            }
-          />
-        </div>
-        <div className="space-y-1.5">
-          <LabelWithHelp
-            htmlFor={`pkg-${print.id}`}
-            tip="Flat add-on for boxes, mailers, or packing. No hourly rate."
-          >
-            Packaging Cost
-          </LabelWithHelp>
-          <Input
-            id={`pkg-${print.id}`}
-            type="number"
-            min={0}
-            value={print.packagingCost}
-            onChange={(e) =>
-              onChange({
-                ...print,
-                packagingCost: Number(e.target.value) || 0,
-              })
-            }
-          />
-        </div>
+      <div className="max-w-xs space-y-1.5">
+        <LabelWithHelp
+          htmlFor={`labor-${print.id}`}
+          tip="Needs Labor Rate / Hour in Advanced Settings to affect cost."
+          title="Labor time"
+          details={
+            <>
+              <p>
+                Labor cost = (labor minutes ÷ 60) × Labor Rate / Hour from
+                Advanced Settings.
+              </p>
+              <p>
+                Current rate: {settings.currencySymbol}
+                {settings.laborRatePerHour}/hr
+                {settings.laborRatePerHour <= 0
+                  ? " — set a rate above 0 or this field will not change the total."
+                  : "."}
+              </p>
+            </>
+          }
+        >
+          Labor Time (Min)
+        </LabelWithHelp>
+        <Input
+          id={`labor-${print.id}`}
+          type="number"
+          min={0}
+          value={print.laborMinutes}
+          onChange={(e) =>
+            onChange({ ...print, laborMinutes: Number(e.target.value) || 0 })
+          }
+        />
       </div>
+
+      <AddonsEditor
+        addons={print.addons}
+        onChange={(addons) => onChange({ ...print, addons })}
+      />
 
       {print.technology === "fdm" &&
       print.plates.filter((p) => p.sliced && p.imageDataUrl).length > 0 ? (

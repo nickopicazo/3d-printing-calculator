@@ -4,6 +4,7 @@ import type { Route } from "./+types/api.projects";
 import { db } from "~/db/index.server";
 import {
   customers,
+  printAddons,
   printMaterials,
   printPlates,
   prints,
@@ -13,6 +14,7 @@ import { dataUrlToBuffer } from "~/lib/calculator-types";
 import {
   calculatePrint,
   withFixedServiceFee,
+  type AddonLine,
   type MaterialLine,
   type Technology,
 } from "~/lib/pricing";
@@ -40,6 +42,13 @@ type MaterialPayload = {
   color?: string | null;
 };
 
+type AddonPayload = {
+  id?: string;
+  name: string;
+  quantity: number;
+  unitCost: number;
+};
+
 type PrintPayload = {
   id?: string;
   name: string;
@@ -48,8 +57,7 @@ type PrintPayload = {
   sourceName?: string | null;
   printMinutes: number;
   laborMinutes: number;
-  hardwareCost: number;
-  packagingCost: number;
+  addons?: AddonPayload[];
   materials: MaterialPayload[];
   plates?: PlatePayload[];
   metadataSnapshot?: Record<string, unknown> | null;
@@ -78,6 +86,14 @@ async function loadProjectBundle(projectId: string, userId: string) {
           .where(inArray(printMaterials.printId, printIds))
           .orderBy(asc(printMaterials.sortOrder))
       : [];
+  const addonRows =
+    printIds.length > 0
+      ? await db
+          .select()
+          .from(printAddons)
+          .where(inArray(printAddons.printId, printIds))
+          .orderBy(asc(printAddons.sortOrder))
+      : [];
   const plateRows =
     printIds.length > 0
       ? await db
@@ -91,6 +107,7 @@ async function loadProjectBundle(projectId: string, userId: string) {
     prints: printRows.map((p) => ({
       ...p,
       materials: materialRows.filter((m) => m.printId === p.id),
+      addons: addonRows.filter((a) => a.printId === p.id),
       plates: plateRows.filter((pl) => pl.printId === p.id),
     })),
   };
@@ -268,14 +285,19 @@ export async function action({ request }: Route.ActionArgs) {
       type: m.type,
       color: m.color,
     }));
+    const addons: AddonLine[] = (p.addons ?? []).map((a, ai) => ({
+      id: a.id ?? `a-${ai}`,
+      name: a.name ?? "",
+      quantity: a.quantity,
+      unitCost: a.unitCost,
+    }));
 
     let breakdown = calculatePrint({
       technology: p.technology === "sla" ? "sla" : "fdm",
       materials,
       printMinutes: p.printMinutes,
       laborMinutes: p.laborMinutes,
-      hardwareCost: p.hardwareCost,
-      packagingCost: p.packagingCost,
+      addons,
       settings,
     });
     if (i === 0) breakdown = withFixedServiceFee(breakdown, settings);
@@ -290,8 +312,7 @@ export async function action({ request }: Route.ActionArgs) {
       sourceName: p.sourceName ?? null,
       printMinutes: p.printMinutes,
       laborMinutes: p.laborMinutes,
-      hardwareCost: p.hardwareCost,
-      packagingCost: p.packagingCost,
+      addonsCost: breakdown.addonsCost,
       materialCost: breakdown.materialCost,
       electricityCost: breakdown.electricityCost,
       laborCost: breakdown.laborCost,
@@ -321,6 +342,19 @@ export async function action({ request }: Route.ActionArgs) {
           type: m.type ?? null,
           color: m.color ?? null,
           sortOrder: mi,
+        })),
+      );
+    }
+
+    if (addons.length > 0) {
+      await db.insert(printAddons).values(
+        addons.map((a, ai) => ({
+          id: newId(),
+          printId,
+          name: a.name.trim(),
+          quantity: a.quantity,
+          unitCost: a.unitCost,
+          sortOrder: ai,
         })),
       );
     }

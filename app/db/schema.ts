@@ -116,8 +116,7 @@ export const prints = pgTable("prints", {
   sourceName: text("source_name"),
   printMinutes: integer("print_minutes").notNull().default(0),
   laborMinutes: integer("labor_minutes").notNull().default(0),
-  hardwareCost: doublePrecision("hardware_cost").notNull().default(0),
-  packagingCost: doublePrecision("packaging_cost").notNull().default(0),
+  addonsCost: doublePrecision("addons_cost").notNull().default(0),
   materialCost: doublePrecision("material_cost").notNull().default(0),
   electricityCost: doublePrecision("electricity_cost").notNull().default(0),
   laborCost: doublePrecision("labor_cost").notNull().default(0),
@@ -133,6 +132,17 @@ export const prints = pgTable("prints", {
   metadataSnapshot: jsonb("metadata_snapshot").notNull().default({}),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const printAddons = pgTable("print_addons", {
+  id: text("id").primaryKey(),
+  printId: text("print_id")
+    .notNull()
+    .references(() => prints.id, { onDelete: "cascade" }),
+  name: text("name").notNull().default(""),
+  quantity: doublePrecision("quantity").notNull().default(1),
+  unitCost: doublePrecision("unit_cost").notNull().default(0),
+  sortOrder: integer("sort_order").notNull().default(0),
 });
 
 export const printMaterials = pgTable("print_materials", {
@@ -182,8 +192,7 @@ export const quotes = pgTable("quotes", {
   electricityCost: doublePrecision("electricity_cost").notNull().default(0),
   laborCost: doublePrecision("labor_cost").notNull().default(0),
   machineCost: doublePrecision("machine_cost").notNull().default(0),
-  hardwareCost: doublePrecision("hardware_cost").notNull().default(0),
-  packagingCost: doublePrecision("packaging_cost").notNull().default(0),
+  addonsCost: doublePrecision("addons_cost").notNull().default(0),
   consumablesCost: doublePrecision("consumables_cost").notNull().default(0),
   landed: doublePrecision("landed").notNull().default(0),
   failureUplift: doublePrecision("failure_uplift").notNull().default(0),
@@ -226,6 +235,7 @@ export const printsRelations = relations(prints, ({ one, many }) => ({
     references: [projects.id],
   }),
   materials: many(printMaterials),
+  addons: many(printAddons),
   plates: many(printPlates),
 }));
 
@@ -237,6 +247,13 @@ export const printMaterialsRelations = relations(printMaterials, ({ one }) => ({
   inventory: one(materials, {
     fields: [printMaterials.inventoryMaterialId],
     references: [materials.id],
+  }),
+}));
+
+export const printAddonsRelations = relations(printAddons, ({ one }) => ({
+  print: one(prints, {
+    fields: [printAddons.printId],
+    references: [prints.id],
   }),
 }));
 
@@ -264,6 +281,7 @@ export type Project = typeof projects.$inferSelect;
 export type Material = typeof materials.$inferSelect;
 export type Print = typeof prints.$inferSelect;
 export type PrintMaterial = typeof printMaterials.$inferSelect;
+export type PrintAddon = typeof printAddons.$inferSelect;
 export type PrintPlate = typeof printPlates.$inferSelect;
 export type Quote = typeof quotes.$inferSelect;
 

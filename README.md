@@ -11,7 +11,7 @@ Estimate **FDM** and **SLA** print costs from material usage, print time, and yo
 - **Duplicate import guard** — skips files that match an existing print by filename or extracted content
 - **Materials inventory** — filament (per kg) and resin (per L); exact type/name match on import (case-insensitive)
 - **Customers & projects** — contacts, attach projects, open calculator or invoice
-- **Cost breakdown** — material, labor, machine, electricity, hardware, packaging, failure uplift, service fee, VAT
+- **Cost breakdown** — material, labor, machine, electricity, addons, failure uplift, service fee, VAT
 - **Print quote / Export PDF** — browser print for guests and saved projects; PDF invoice when the project is saved
 - **Field help** — hover tips and detail dialogs on rate-dependent inputs
 
@@ -26,8 +26,9 @@ electricityCost  = printHours × (powerWatts / 1000) × electricityPerKwh
 laborCost        = (laborMinutes / 60) × laborRatePerHour
 machineCost      = printHours × machineRatePerHour
 consumablesCost  = SLA only → slaConsumablesPerPrint
+addonsCost       = Σ (quantity × unitCost)
 landed           = material + electricity + labor + machine
-                   + hardware + packaging + consumables
+                   + addons + consumables
 failureUplift    = landed × (failurePercent / 100)
 serviceFee       = percent → (landed + failure) × (fee / 100)
                    fixed  → applied once at project level (not per print)

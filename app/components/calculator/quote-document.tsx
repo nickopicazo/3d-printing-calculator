@@ -23,8 +23,7 @@ export type QuoteDocumentTotals = {
   electricityCost: number;
   laborCost: number;
   machineCost: number;
-  hardwareCost: number;
-  packagingCost: number;
+  addonsCost: number;
   consumablesCost?: number;
   failureUplift: number;
   markupAmount: number;
@@ -102,8 +101,7 @@ export function QuoteDocument({
     { label: "Machine", amount: totals.machineCost },
     { label: "Electricity", amount: totals.electricityCost },
     { label: "Labor", amount: totals.laborCost },
-    { label: "Hardware", amount: totals.hardwareCost },
-    { label: "Packaging", amount: totals.packagingCost },
+    { label: "Addons", amount: totals.addonsCost },
     { label: "Consumables", amount: totals.consumablesCost ?? 0 },
     { label: "Failure uplift", amount: totals.failureUplift },
     { label: "Service fee", amount: totals.markupAmount },

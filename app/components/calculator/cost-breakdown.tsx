@@ -72,8 +72,9 @@ export function CostBreakdown({
 
       <div className="space-y-2.5">
         <Row dark={dark} label="Material" value={m(breakdown.materialCost)} />
-        <Row dark={dark} label="Hardware" value={m(breakdown.hardwareCost)} />
-        <Row dark={dark} label="Packaging" value={m(breakdown.packagingCost)} />
+        {breakdown.addonsCost > 0 ? (
+          <Row dark={dark} label="Addons" value={m(breakdown.addonsCost)} />
+        ) : null}
         {breakdown.consumablesCost > 0 ? (
           <Row dark={dark} label="Consumables" value={m(breakdown.consumablesCost)} />
         ) : null}

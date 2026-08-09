@@ -209,8 +209,12 @@ export default function Home() {
             sourceName: string | null;
             printMinutes: number;
             laborMinutes: number;
-            hardwareCost: number;
-            packagingCost: number;
+            addons?: Array<{
+              id: string;
+              name: string;
+              quantity: number;
+              unitCost: number;
+            }>;
             materials: Array<{
               id: string;
               label: string;
@@ -241,8 +245,12 @@ export default function Home() {
               printHours: hm.hours,
               printMinutesPart: hm.minutes,
               laborMinutes: p.laborMinutes,
-              hardwareCost: p.hardwareCost,
-              packagingCost: p.packagingCost,
+              addons: (p.addons ?? []).map((a) => ({
+                id: a.id,
+                name: a.name ?? "",
+                quantity: a.quantity,
+                unitCost: a.unitCost,
+              })),
               materials: (p.materials ?? []).map((m) => ({
                 id: m.id,
                 label: m.label,
@@ -311,8 +319,7 @@ export default function Home() {
         materials: p.materials,
         printMinutes: printDraftMinutes(p),
         laborMinutes: p.laborMinutes,
-        hardwareCost: p.hardwareCost,
-        packagingCost: p.packagingCost,
+        addons: p.addons,
         settings,
       },
     }));
@@ -641,8 +648,7 @@ export default function Home() {
             sourceName: p.sourceName,
             printMinutes: printDraftMinutes(p),
             laborMinutes: p.laborMinutes,
-            hardwareCost: p.hardwareCost,
-            packagingCost: p.packagingCost,
+            addons: p.addons,
             materials: p.materials,
             plates: p.plates
               .filter((pl) => pl.sliced)
@@ -724,6 +730,7 @@ export default function Home() {
     <main className="page-shell animate-fade-up">
       <ConfirmDeleteDialog
         open={pendingDelete != null}
+        title="Delete Project"
         description={
           pendingDelete
             ? `Delete “${pendingDelete.name}”? This cannot be undone.`
@@ -972,7 +979,7 @@ export default function Home() {
                     <p>
                       VAT amount = pre-VAT total × (VAT % ÷ 100). Pre-VAT
                       includes materials, electricity, labor, machine,
-                      hardware, packaging, consumables, failure uplift, and
+                      addons, consumables, failure uplift, and
                       service fee.
                     </p>
                   }

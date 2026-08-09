@@ -161,7 +161,7 @@ export const SITE_FAQS: ReadonlyArray<{ question: string; answer: string }> = [
   {
     question: "How do I calculate 3D printing cost?",
     answer:
-      "Enter material usage (grams for FDM or millilitres for SLA), print time, and your rates for machine time, labor, electricity, and markup. The 3D Printing Calculator totals material, hardware, packaging, labor, machine, and electricity costs with optional failure uplift, service fees, and VAT.",
+      "Enter material usage (grams for FDM or millilitres for SLA), print time, and your rates for machine time, labor, electricity, and markup. The 3D Printing Calculator totals material, addons, labor, machine, and electricity costs with optional failure uplift, service fees, and VAT.",
   },
   {
     question: "What is the 3D Printing Calculator app?",
@@ -196,7 +196,7 @@ export const SITE_FAQS: ReadonlyArray<{ question: string; answer: string }> = [
   {
     question: "What costs are included in a print quote?",
     answer:
-      "Each estimate can include material, hardware, packaging, labor, machine depreciation or hourly rate, electricity (watts × hours × kWh rate), failure uplift, percent or fixed service fee, and VAT—shown as a clear cost breakdown.",
+      "Each estimate can include material, addons, labor, machine depreciation or hourly rate, electricity (watts × hours × kWh rate), failure uplift, percent or fixed service fee, and VAT—shown as a clear cost breakdown.",
   },
   {
     question: "Can I save projects, customers, and material inventory?",

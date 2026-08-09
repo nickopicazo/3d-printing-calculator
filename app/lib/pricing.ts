@@ -18,6 +18,14 @@ export type MaterialLine = {
   color?: string | null;
 };
 
+export type AddonLine = {
+  id: string;
+  name: string;
+  quantity: number;
+  /** Unit cost; line total = quantity × unitCost */
+  unitCost: number;
+};
+
 /** @deprecated Use MaterialLine — legacy fields for old call sites */
 export type FilamentLine = {
   id: string;
@@ -39,8 +47,7 @@ export type PrintInput = {
   materials: MaterialLine[];
   printMinutes: number;
   laborMinutes: number;
-  hardwareCost: number;
-  packagingCost: number;
+  addons: AddonLine[];
   settings: AppSettings;
 };
 
@@ -49,8 +56,7 @@ export type PrintBreakdown = {
   electricityCost: number;
   laborCost: number;
   machineCost: number;
-  hardwareCost: number;
-  packagingCost: number;
+  addonsCost: number;
   consumablesCost: number;
   landed: number;
   failureUplift: number;
@@ -100,6 +106,11 @@ export function materialCostForLine(
   return (qty / 1000) * price;
 }
 
+/** Cost for one addon line. quantity × unitCost. */
+export function addonCostForLine(line: AddonLine): number {
+  return clampNonNeg(line.quantity) * clampNonNeg(line.unitCost);
+}
+
 export function calculatePrint(input: PrintInput): PrintBreakdown {
   const { settings, technology } = input;
   const wastePercent =
@@ -121,8 +132,10 @@ export function calculatePrint(input: PrintInput): PrintBreakdown {
 
   const laborCost = laborHours * clampNonNeg(settings.laborRatePerHour);
   const machineCost = printHours * clampNonNeg(settings.machineRatePerHour);
-  const hardwareCost = clampNonNeg(input.hardwareCost);
-  const packagingCost = clampNonNeg(input.packagingCost);
+  const addonsCost = input.addons.reduce(
+    (sum, line) => sum + addonCostForLine(line),
+    0,
+  );
   const consumablesCost =
     technology === "sla" ? clampNonNeg(settings.slaConsumablesPerPrint) : 0;
 
@@ -131,8 +144,7 @@ export function calculatePrint(input: PrintInput): PrintBreakdown {
     electricityCost +
     laborCost +
     machineCost +
-    hardwareCost +
-    packagingCost +
+    addonsCost +
     consumablesCost;
 
   const failureUplift =
@@ -153,8 +165,7 @@ export function calculatePrint(input: PrintInput): PrintBreakdown {
     electricityCost,
     laborCost,
     machineCost,
-    hardwareCost,
-    packagingCost,
+    addonsCost,
     consumablesCost,
     landed,
     failureUplift,
@@ -207,8 +218,7 @@ export function calculateProject(
     electricityCost: 0,
     laborCost: 0,
     machineCost: 0,
-    hardwareCost: 0,
-    packagingCost: 0,
+    addonsCost: 0,
     consumablesCost: 0,
     landed: 0,
     failureUplift: 0,
@@ -226,8 +236,7 @@ export function calculateProject(
       electricityCost: acc.electricityCost + b.electricityCost,
       laborCost: acc.laborCost + b.laborCost,
       machineCost: acc.machineCost + b.machineCost,
-      hardwareCost: acc.hardwareCost + b.hardwareCost,
-      packagingCost: acc.packagingCost + b.packagingCost,
+      addonsCost: acc.addonsCost + b.addonsCost,
       consumablesCost: acc.consumablesCost + b.consumablesCost,
       landed: acc.landed + b.landed,
       failureUplift: acc.failureUplift + b.failureUplift,
@@ -300,6 +309,15 @@ export function createEmptyMaterial(
   };
 }
 
+export function createEmptyAddon(id?: string): AddonLine {
+  return {
+    id: id ?? createId("addon"),
+    name: "",
+    quantity: 1,
+    unitCost: 0,
+  };
+}
+
 /** @deprecated Use createEmptyMaterial */
 export function createEmptyFilament(
   pricePerKg: number,
@@ -347,8 +365,7 @@ export function calculateQuote(input: {
     materials,
     printMinutes: input.printMinutes,
     laborMinutes: 0,
-    hardwareCost: 0,
-    packagingCost: 0,
+    addons: [],
     settings: {
       currencyCode: "PHP",
       currencySymbol: "₱",

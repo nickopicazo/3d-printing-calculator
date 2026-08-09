@@ -1,8 +1,9 @@
-import { Share2, Printer, Plus } from "lucide-react";
+import { Share2, Printer, Plus, Upload } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { AdvancedSettingsPanel } from "~/components/calculator/advanced-settings";
 import { CostBreakdown } from "~/components/calculator/cost-breakdown";
 import { GuestInvoicePrint } from "~/components/calculator/guest-invoice-print";
+import { Import3mfTour } from "~/components/calculator/import-3mf-tour";
 import { PrintEditor } from "~/components/calculator/print-editor";
 import { ShareCalculationDialog } from "~/components/calculator/share-calculation-dialog";
 import { Combobox } from "~/components/ui/combobox";
@@ -31,6 +32,7 @@ import {
   printDraftMinutes,
   type ProjectDraft,
 } from "~/lib/calculator-types";
+import { importGcodeFiles } from "~/lib/gcode/applyImportToPrint";
 import {
   applyLandingPreset,
   projectFromSharePayload,
@@ -108,6 +110,10 @@ export function CalculatorSurface({
     seeded.project.prints[0]?.id ?? null,
   );
   const [shareOpen, setShareOpen] = useState(false);
+  const [uploadPrintId, setUploadPrintId] = useState<string | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importWarning, setImportWarning] = useState<string | null>(null);
+  const [importTourOpen, setImportTourOpen] = useState(false);
 
   useEffect(() => {
     const next = seedState(preset, initialShare);
@@ -175,8 +181,37 @@ export function CalculatorSurface({
     });
   }
 
+  async function handleUploadFiles(printId: string, files: File[]) {
+    if (files.length === 0) return;
+    setUploadPrintId(printId);
+    setImportError(null);
+    setImportWarning(null);
+    try {
+      const result = await importGcodeFiles({
+        printId,
+        files,
+        prints: project.prints,
+        settings,
+      });
+      if (!result.unchanged) {
+        setProject((prev) => ({ ...prev, prints: result.prints }));
+      }
+      setActivePrintId(result.activePrintId);
+      if (result.warning) setImportWarning(result.warning);
+    } catch (e) {
+      setImportError(e instanceof Error ? e.message : "Import failed.");
+    } finally {
+      setUploadPrintId(null);
+    }
+  }
+
   return (
     <div className={cn(compact ? "space-y-4" : "space-y-6", className)}>
+      <Import3mfTour
+        open={importTourOpen}
+        loggedIn
+        onOpenChange={setImportTourOpen}
+      />
       {(heading || subheading || showOpenFullApp) && (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
@@ -356,11 +391,57 @@ export function CalculatorSurface({
 
           {activePrint ? (
             <div className="space-y-3">
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                 <h3 className="font-display text-lg font-extrabold tracking-tight">
                   Prints
                 </h3>
+                <label className="inline-flex w-full sm:w-auto">
+                  <input
+                    type="file"
+                    accept=".gcode,.3mf,.zip,.gcode.3mf"
+                    multiple
+                    className="sr-only"
+                    disabled={uploadPrintId != null}
+                    onChange={(e) => {
+                      const list = e.target.files;
+                      if (list && list.length > 0 && activePrintId) {
+                        void handleUploadFiles(
+                          activePrintId,
+                          Array.from(list),
+                        );
+                      }
+                      e.target.value = "";
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="w-full sm:w-auto"
+                    asChild
+                  >
+                    <span className="inline-flex cursor-pointer items-center justify-center gap-2">
+                      <Upload className="size-4" aria-hidden />
+                      {uploadPrintId != null
+                        ? "Importing…"
+                        : "Upload 3MF / G-code"}
+                    </span>
+                  </Button>
+                </label>
               </div>
+              {importWarning || importError ? (
+                <div className="space-y-2">
+                  {importWarning ? (
+                    <p className="rounded-xl border border-[#e8d9a8] bg-[#fffbeb] px-3 py-2 text-sm text-[#9a6700]">
+                      {importWarning}
+                    </p>
+                  ) : null}
+                  {importError ? (
+                    <p className="rounded-xl border border-[#e8c4be] bg-[#fdf4f2] px-3 py-2 text-sm text-[#a33b2b]">
+                      {importError}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
               <Tabs
                 value={activePrintId ?? undefined}
                 onValueChange={setActivePrintId}
@@ -415,9 +496,14 @@ export function CalculatorSurface({
                         inventory={[]}
                         loggedIn={false}
                         canRemove={project.prints.length > 1}
+                        uploading={uploadPrintId === print.id}
                         embedded
                         onChange={(next) => updatePrint(print.id, next)}
                         onRemove={() => removePrint(print.id)}
+                        onUploadFiles={(files) =>
+                          handleUploadFiles(print.id, files)
+                        }
+                        onOpenImportGuide={() => setImportTourOpen(true)}
                       />
                       {printCalc ? (
                         <CostBreakdown

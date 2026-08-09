@@ -46,10 +46,7 @@ import { withSignInSearch } from "~/lib/sign-in";
 import {
   emptyPrint,
   emptyProject,
-  findDuplicatePrint,
   nextPrintName,
-  normalizeSourceName,
-  printContentFingerprint,
   printDraftMinutes,
   type InventoryMaterial,
   type PrintDraft,
@@ -57,6 +54,7 @@ import {
   type SavedCustomer,
   type SavedProject,
 } from "~/lib/calculator-types";
+import { importGcodeFiles } from "~/lib/gcode/applyImportToPrint";
 import { withParentMeta, SITE_DESCRIPTION, SITE_FAQS, SITE_TITLE } from "~/lib/seo";
 import { createId, calculateProject } from "~/lib/pricing";
 import { minutesToHoursMinutes } from "~/lib/pricing";
@@ -376,63 +374,6 @@ export default function Home() {
     }
   }
 
-  async function applyFileToPrint(
-    file: File,
-    base: PrintDraft,
-  ): Promise<PrintDraft> {
-    const { extractFromGcodeUpload, isSupportedGcodeImport } = await import(
-      "~/lib/gcode/loadFromArchive"
-    );
-    if (!isSupportedGcodeImport(file)) {
-      throw new Error(`Unsupported file: ${file.name}`);
-    }
-    const result = await extractFromGcodeUpload(file);
-    const hm = minutesToHoursMinutes(result.totalMinutes ?? 0);
-    const plateMeta = result.metadataSnapshot.plates[0]?.metadata ?? {};
-    const printer =
-      (typeof plateMeta.printer_model === "string" &&
-      plateMeta.printer_model.trim()
-        ? plateMeta.printer_model.trim()
-        : null) ??
-      (typeof plateMeta.printer_model_id === "string" &&
-      plateMeta.printer_model_id.trim()
-        ? plateMeta.printer_model_id.trim()
-        : null) ??
-      "";
-    const price = settings.defaultFilamentPricePerKg;
-    // Keep slicer/3MF metadata as-is; do not auto-bind inventory.
-    // Users can still pick from inventory in the materials dropdown.
-    const materials =
-      result.filaments.length > 0
-        ? result.filaments.map((f) => ({
-            id: createId("mat"),
-            label: f.type || f.label || "Filament",
-            quantity: f.grams,
-            unit: "g" as const,
-            pricePerUnit: price,
-            inventoryMaterialId: null,
-            slot: f.slot ?? null,
-            type: f.type ?? null,
-            color: f.color ?? null,
-          }))
-        : base.materials;
-
-    return {
-      ...base,
-      technology: "fdm",
-      sourceName: result.sourceName,
-      printerName: printer || base.printerName,
-      printHours: hm.hours,
-      printMinutesPart: hm.minutes,
-      materials,
-      plates: result.plates,
-      metadataSnapshot: result.metadataSnapshot as unknown as Record<
-        string,
-        unknown
-      >,
-    };
-  }
-
   async function handleUploadFiles(printId: string, files: File[]) {
     if (files.length === 0) return;
     setUploadPrintId(printId);
@@ -440,117 +381,17 @@ export default function Home() {
     setMessage(null);
     setWarning(null);
     try {
-      const current = project.prints.find((p) => p.id === printId);
-      if (!current) throw new Error("Print not found.");
-
-      const skipped: string[] = [];
-      const acceptedFingerprints = new Set<string>();
-      const acceptedSources = new Set<string>();
-
-      function markAccepted(print: PrintDraft) {
-        acceptedFingerprints.add(printContentFingerprint(print));
-        const src = normalizeSourceName(print.sourceName);
-        if (src) acceptedSources.add(src);
+      const result = await importGcodeFiles({
+        printId,
+        files,
+        prints: project.prints,
+        settings,
+      });
+      if (!result.unchanged) {
+        setProject((prev) => ({ ...prev, prints: result.prints }));
       }
-
-      function isDuplicateOf(
-        candidate: PrintDraft,
-        prints: PrintDraft[],
-        excludeId?: string,
-      ): PrintDraft | "batch" | null {
-        const src = normalizeSourceName(candidate.sourceName);
-        if (src && acceptedSources.has(src)) return "batch";
-        if (acceptedFingerprints.has(printContentFingerprint(candidate))) {
-          return "batch";
-        }
-        return findDuplicatePrint(prints, candidate, excludeId);
-      }
-
-      function skipLabel(fileName: string, dup: PrintDraft | "batch") {
-        if (dup === "batch") {
-          return `${fileName} (already in this upload)`;
-        }
-        const label = dup.name.trim() || "another print";
-        return `${fileName} → ${label}`;
-      }
-
-      const [first, ...rest] = files;
-      let updatedCurrent: PrintDraft | null = null;
-      let workingPrints = project.prints;
-
-      if (first) {
-        const imported = await applyFileToPrint(first, current);
-        const dup = isDuplicateOf(imported, workingPrints, printId);
-        if (dup) {
-          skipped.push(skipLabel(first.name, dup));
-          if (files.length === 1 && dup !== "batch") {
-            setActivePrintId(dup.id);
-            setWarning(
-              `Already imported as “${dup.name.trim() || "another print"}”. Skipped.`,
-            );
-            return;
-          }
-        } else {
-          updatedCurrent = imported;
-          markAccepted(imported);
-          workingPrints = workingPrints.map((p) =>
-            p.id === printId ? imported : p,
-          );
-        }
-      }
-
-      const extras: PrintDraft[] = [];
-      let nameSeed = workingPrints;
-      for (const file of rest) {
-        const id = createId("print");
-        const name = nextPrintName(nameSeed);
-        const blank = {
-          ...emptyPrint(settings, "fdm", name),
-          id,
-          name,
-        };
-        const imported = await applyFileToPrint(file, blank);
-        const dup = isDuplicateOf(imported, workingPrints);
-        if (dup) {
-          skipped.push(skipLabel(file.name, dup));
-          continue;
-        }
-        extras.push(imported);
-        markAccepted(imported);
-        nameSeed = [...nameSeed, imported];
-        workingPrints = [...workingPrints, imported];
-      }
-
-      if (updatedCurrent || extras.length > 0) {
-        setProject((prev) => ({
-          ...prev,
-          prints: [
-            ...(updatedCurrent
-              ? prev.prints.map((p) =>
-                  p.id === printId ? updatedCurrent! : p,
-                )
-              : prev.prints),
-            ...extras,
-          ],
-        }));
-        setActivePrintId(extras.at(-1)?.id ?? printId);
-      }
-
-      const importedCount =
-        (updatedCurrent ? 1 : 0) + extras.length;
-      if (skipped.length > 0 && importedCount > 0) {
-        setWarning(
-          `Imported ${importedCount}. Skipped ${skipped.length} duplicate${skipped.length === 1 ? "" : "s"}: ${skipped.join("; ")}.`,
-        );
-      } else if (skipped.length > 0) {
-        setWarning(
-          `Skipped ${skipped.length} duplicate${skipped.length === 1 ? "" : "s"}: ${skipped.join("; ")}.`,
-        );
-      } else if (files.length > 1) {
-        setWarning(
-          `Imported ${importedCount} file${importedCount === 1 ? "" : "s"} as ${importedCount} print${importedCount === 1 ? "" : "s"}.`,
-        );
-      }
+      setActivePrintId(result.activePrintId);
+      if (result.warning) setWarning(result.warning);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Import failed.");
     } finally {
@@ -1032,57 +873,38 @@ export default function Home() {
                   Prints
                 </h2>
                 <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
-                  {loggedIn ? (
-                    <label className="inline-flex w-full sm:w-auto">
-                      <input
-                        type="file"
-                        accept=".gcode,.3mf,.zip,.gcode.3mf"
-                        multiple
-                        className="sr-only"
-                        disabled={uploadPrintId != null}
-                        onChange={(e) => {
-                          const list = e.target.files;
-                          if (list && list.length > 0 && activePrintId) {
-                            void handleUploadFiles(
-                              activePrintId,
-                              Array.from(list),
-                            );
-                          }
-                          e.target.value = "";
-                        }}
-                      />
-                      <Button
-                        type="button"
-                        variant="secondary"
-                        className="w-full sm:w-auto"
-                        asChild
-                      >
-                        <span className="inline-flex cursor-pointer items-center justify-center gap-2">
-                          <Upload className="size-4" aria-hidden />
-                          {uploadPrintId != null
-                            ? "Importing…"
-                            : "Upload 3MF / G-code"}
-                        </span>
-                      </Button>
-                    </label>
-                  ) : (
+                  <label className="inline-flex w-full sm:w-auto">
+                    <input
+                      type="file"
+                      accept=".gcode,.3mf,.zip,.gcode.3mf"
+                      multiple
+                      className="sr-only"
+                      disabled={uploadPrintId != null}
+                      onChange={(e) => {
+                        const list = e.target.files;
+                        if (list && list.length > 0 && activePrintId) {
+                          void handleUploadFiles(
+                            activePrintId,
+                            Array.from(list),
+                          );
+                        }
+                        e.target.value = "";
+                      }}
+                    />
                     <Button
                       type="button"
                       variant="secondary"
                       className="w-full sm:w-auto"
                       asChild
                     >
-                      <Link
-                        to={{
-                          search: withSignInSearch(searchParams.toString()),
-                        }}
-                        className="inline-flex items-center justify-center gap-2"
-                      >
+                      <span className="inline-flex cursor-pointer items-center justify-center gap-2">
                         <Upload className="size-4" aria-hidden />
-                        Upload 3MF / G-code
-                      </Link>
+                        {uploadPrintId != null
+                          ? "Importing…"
+                          : "Upload 3MF / G-code"}
+                      </span>
                     </Button>
-                  )}
+                  </label>
                 </div>
               </div>
               {message || warning || error ? (
@@ -1174,10 +996,8 @@ export default function Home() {
                           }
                         }}
                         onRemove={() => removePrint(print.id)}
-                        onUploadFiles={
-                          loggedIn
-                            ? (files) => handleUploadFiles(print.id, files)
-                            : undefined
+                        onUploadFiles={(files) =>
+                          handleUploadFiles(print.id, files)
                         }
                         onOpenImportGuide={() => setImportTourOpen(true)}
                       />

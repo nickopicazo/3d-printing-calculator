@@ -82,7 +82,7 @@ const materialPage = (
     {
       question: `Can I use this ${type} calculator for multi-color prints?`,
       answer:
-        "Yes. Add more material lines on the print, or open the full calculator and import a Bambu Studio / OrcaSlicer 3MF with multiple filaments.",
+        "Yes. Add more material lines on the print, or import a Bambu Studio / OrcaSlicer 3MF with multiple filaments.",
     },
   ],
   preset: {
@@ -212,7 +212,7 @@ export const LANDING_PAGES: LandingPage[] = [
       {
         question: "Where do I get grams used?",
         answer:
-          "From your slicer estimate, or upload a Bambu Studio / OrcaSlicer 3MF or G-code in the full calculator after signing in.",
+          "From your slicer estimate, or upload a Bambu Studio / OrcaSlicer 3MF or G-code directly in this calculator.",
       },
     ],
     preset: {
@@ -357,7 +357,7 @@ export const LANDING_PAGES: LandingPage[] = [
       {
         question: "Is embedding free?",
         answer:
-          "Yes. Keep the “Open full calculator” / powered-by link so users can save projects and import 3MF files on the main site.",
+          "Yes. Keep the “Open full calculator” / powered-by link so users can save projects on the main site.",
       },
     ],
     preset: {
@@ -382,7 +382,7 @@ export const LANDING_PAGES: LandingPage[] = [
       {
         heading: "A1 pricing notes",
         paragraphs: [
-          "Pre-filled with an estimated ~350 W draw and PHP shop rates. Replace grams and hours with your Bambu Studio slice, or import a 3MF in the full calculator.",
+          "Pre-filled with an estimated ~350 W draw and PHP shop rates. Replace grams and hours with your Bambu Studio slice, or import a 3MF with Upload 3MF / G-code.",
         ],
       },
     ],
@@ -416,7 +416,7 @@ export const LANDING_PAGES: LandingPage[] = [
       {
         question: "Does this support AMS multi-color?",
         answer:
-          "Add multiple filament lines for each color, or import a multi-filament 3MF in the signed-in full calculator.",
+          "Add multiple filament lines for each color, or import a multi-filament 3MF with Upload 3MF / G-code.",
       },
     ],
     preset: bambuBase("Bambu Lab A1 mini", 200),
@@ -472,7 +472,7 @@ export const LANDING_PAGES: LandingPage[] = [
       {
         question: "Can I import X1C 3MF files?",
         answer:
-          "Yes. Sign in on the main calculator and upload Bambu Studio plate exports to auto-fill time and filament.",
+          "Yes. Use Upload 3MF / G-code on this page (or the main calculator) with a Bambu Studio plate export to auto-fill time and filament.",
       },
     ],
     preset: {

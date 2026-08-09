@@ -132,35 +132,29 @@ export function Import3mfTour({
             </DialogDescription>
           </DialogHeader>
 
-          {!loggedIn ? (
-            <div className="rounded-xl border border-[rgba(111,82,240,0.3)] bg-[rgba(111,82,240,0.08)] px-3.5 py-3 text-sm leading-relaxed text-[var(--color-accent-deep)]">
-              <p className="flex items-start gap-2">
-                <LogIn className="mt-0.5 size-4 shrink-0" aria-hidden />
-                <span>
-                  <span className="font-semibold">Sign in required.</span> You
-                  need to log in before you can upload a 3MF / G-code file and
-                  auto-fill print data.
-                </span>
-              </p>
-            </div>
-          ) : (
-            <div className="rounded-xl border border-[var(--color-line)] bg-[var(--color-paper)]/80 px-3.5 py-3 text-sm leading-relaxed text-[var(--color-ink-muted)]">
-              <p className="flex items-start gap-2">
-                <Upload
-                  className="mt-0.5 size-4 shrink-0 text-[var(--color-accent-deep)]"
-                  aria-hidden
-                />
-                <span>
-                  Look for{" "}
-                  <span className="font-semibold text-[var(--color-ink)]">
-                    Upload 3MF / G-code
-                  </span>{" "}
-                  on the Prints section. Best results come from a sliced plate
-                  export (not an unsliced project-only 3MF).
-                </span>
-              </p>
-            </div>
-          )}
+          <div className="rounded-xl border border-[var(--color-line)] bg-[var(--color-paper)]/80 px-3.5 py-3 text-sm leading-relaxed text-[var(--color-ink-muted)]">
+            <p className="flex items-start gap-2">
+              <Upload
+                className="mt-0.5 size-4 shrink-0 text-[var(--color-accent-deep)]"
+                aria-hidden
+              />
+              <span>
+                Look for{" "}
+                <span className="font-semibold text-[var(--color-ink)]">
+                  Upload 3MF / G-code
+                </span>{" "}
+                on the Prints section. Best results come from a sliced plate
+                export (not an unsliced project-only 3MF).
+                {!loggedIn ? (
+                  <>
+                    {" "}
+                    Sign in anytime to save projects and inventory — upload
+                    works without an account.
+                  </>
+                ) : null}
+              </span>
+            </p>
+          </div>
 
           <Separator />
 
@@ -303,7 +297,7 @@ export function Import3mfTour({
                 variant="outline"
                 onClick={() => handleOpenChange(false)}
               >
-                Maybe later
+                Got it
               </Button>
               <Button asChild>
                 <Link
@@ -311,7 +305,7 @@ export function Import3mfTour({
                   onClick={() => handleOpenChange(false)}
                 >
                   <LogIn />
-                  Sign in to upload
+                  Sign in to save
                 </Link>
               </Button>
             </>

@@ -123,7 +123,7 @@ export function LandingPageView({
         </div>
 
         <p className="text-sm text-[var(--color-ink-muted)]">
-          Need the full workspace with 3MF import and saved projects?{" "}
+          Need saved projects and inventory?{" "}
           <Link to="/" className="font-semibold text-[var(--color-ink)] underline">
             Open the main calculator
           </Link>

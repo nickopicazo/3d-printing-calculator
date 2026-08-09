@@ -150,7 +150,7 @@ export function PrintEditor({
         <div className="flex flex-col gap-2 sm:col-span-2 sm:flex-row sm:flex-wrap sm:items-end sm:justify-end">
           {print.technology === "fdm" ? (
             <div className="flex w-full items-center gap-1.5 sm:w-auto">
-              {loggedIn && onUploadFiles ? (
+              {onUploadFiles ? (
                 <label className="inline-flex min-w-0 flex-1 sm:flex-initial">
                   <input
                     type="file"
@@ -177,7 +177,7 @@ export function PrintEditor({
                     </span>
                   </Button>
                 </label>
-              ) : (
+              ) : !loggedIn ? (
                 <Button
                   type="button"
                   variant="secondary"
@@ -192,7 +192,7 @@ export function PrintEditor({
                     Upload 3MF / G-code
                   </Link>
                 </Button>
-              )}
+              ) : null}
               {onOpenImportGuide ? (
                 <Button
                   type="button"

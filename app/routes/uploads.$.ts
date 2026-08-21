@@ -14,7 +14,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   }
 
   const fullPath = resolveUploadPath(relative);
-  const root = path.resolve(uploadRoot());
+  const root = uploadRoot();
   if (!fullPath.startsWith(root + path.sep) && fullPath !== root) {
     throw new Response("Forbidden", { status: 403 });
   }

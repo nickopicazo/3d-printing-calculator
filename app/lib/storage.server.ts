@@ -2,7 +2,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 export function uploadRoot(): string {
-  return process.env.UPLOAD_DIR || path.join(process.cwd(), "uploads");
+  return path.resolve(process.env.UPLOAD_DIR || path.join(process.cwd(), "uploads"));
 }
 
 export async function savePlateImage(args: {
@@ -20,5 +20,6 @@ export async function savePlateImage(args: {
 
 export function resolveUploadPath(relativePath: string): string {
   const normalized = path.normalize(relativePath).replace(/^(\.\.(\/|\\|$))+/, "");
-  return path.join(uploadRoot(), normalized);
+  // join (not resolve) so an absolute-looking relativePath cannot escape the root
+  return path.resolve(path.join(uploadRoot(), normalized));
 }

@@ -21,7 +21,11 @@ import type {
   InventoryMaterial,
   PrintDraft,
 } from "~/lib/calculator-types";
-import { PRINTER_PRESETS, type Technology } from "~/lib/pricing";
+import {
+  minutesToHoursMinutes,
+  PRINTER_PRESETS,
+  type Technology,
+} from "~/lib/pricing";
 import type { AppSettings } from "~/lib/settings";
 import { withSignInSearch } from "~/lib/sign-in";
 import { cn } from "~/lib/utils";
@@ -63,6 +67,7 @@ export function PrintEditor({
     print.technology === "sla"
       ? settings.defaultResinPricePerLitre
       : settings.defaultFilamentPricePerKg;
+  const postProcess = minutesToHoursMinutes(print.postProcessMinutes);
 
   function setTech(technology: Technology) {
     const price =
@@ -221,7 +226,7 @@ export function PrintEditor({
           ) : null}
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2 sm:col-span-3">
           <Label htmlFor={`printer-${print.id}`}>Printer</Label>
           <Combobox
             id={`printer-${print.id}`}
@@ -233,7 +238,10 @@ export function PrintEditor({
             allowCustom
           />
         </div>
-        <div className="space-y-2">
+      </div>
+
+      <div className="grid gap-x-4 gap-y-4 sm:grid-cols-3">
+        <div className="min-w-0 space-y-2">
           <LabelWithHelp
             htmlFor={`ph-${print.id}`}
             tip="Print time drives machine and electricity cost."
@@ -288,7 +296,7 @@ export function PrintEditor({
             </InputGroupText>
           </InputGroup>
         </div>
-        <div className="space-y-2">
+        <div className="min-w-0 space-y-2">
           <LabelWithHelp
             htmlFor={`labor-${print.id}`}
             tip="Needs Labor Rate / Hour in Advanced Settings to affect cost."
@@ -296,8 +304,8 @@ export function PrintEditor({
             details={
               <>
                 <p>
-                  Labor cost = (labor minutes ÷ 60) × Labor Rate / Hour from
-                  Advanced Settings.
+                  Setup, slicing, and handling time. Labor cost = (labor minutes
+                  ÷ 60) × Labor Rate / Hour from Advanced Settings.
                 </p>
                 <p>
                   Current rate: {settings.currencySymbol}
@@ -323,6 +331,71 @@ export function PrintEditor({
               })
             }
           />
+        </div>
+        <div className="min-w-0 space-y-2">
+          <LabelWithHelp
+            htmlFor={`pp-h-${print.id}`}
+            tip="Cleaning, sanding, and finishing. Billed at Labor Rate / Hour."
+            title="Post-processing time"
+            details={
+              <>
+                <p>
+                  Cleaning, sanding, painting, and assembly. Billed as its own
+                  quote line: post-processing hours × Labor Rate / Hour from
+                  Advanced Settings.
+                </p>
+                <p>
+                  Current rate: {settings.currencySymbol}
+                  {settings.laborRatePerHour}/hr
+                  {settings.laborRatePerHour <= 0
+                    ? " — set a rate above 0 or this field will not change the total."
+                    : "."}
+                </p>
+              </>
+            }
+          >
+            Post-processing time
+          </LabelWithHelp>
+          <InputGroup>
+            <InputGroupAddon align="inline-start">
+              <Clock aria-hidden />
+            </InputGroupAddon>
+            <InputGroupInput
+              id={`pp-h-${print.id}`}
+              type="number"
+              min={0}
+              aria-label="Post-processing hours"
+              value={postProcess.hours}
+              onChange={(e) =>
+                onChange({
+                  ...print,
+                  postProcessMinutes:
+                    Math.max(0, Number(e.target.value) || 0) * 60 +
+                    postProcess.minutes,
+                })
+              }
+            />
+            <InputGroupText aria-hidden>hr</InputGroupText>
+            <InputGroupInput
+              id={`pp-m-${print.id}`}
+              type="number"
+              min={0}
+              max={59}
+              aria-label="Post-processing minutes"
+              value={postProcess.minutes}
+              onChange={(e) =>
+                onChange({
+                  ...print,
+                  postProcessMinutes:
+                    postProcess.hours * 60 +
+                    Math.max(0, Number(e.target.value) || 0),
+                })
+              }
+            />
+            <InputGroupText className="pr-3" aria-hidden>
+              min
+            </InputGroupText>
+          </InputGroup>
         </div>
       </div>
 

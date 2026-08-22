@@ -1,4 +1,8 @@
-import { formatMoney, type PrintBreakdown } from "~/lib/pricing";
+import {
+  formatMinutesDuration,
+  formatMoney,
+  type PrintBreakdown,
+} from "~/lib/pricing";
 import { cn } from "~/lib/utils";
 
 type Props = {
@@ -6,6 +10,8 @@ type Props = {
   currencySymbol: string;
   title?: string;
   variant?: "light" | "dark";
+  /** Shown next to the post-processing row when above zero. */
+  postProcessMinutes?: number;
 };
 
 function Row({
@@ -42,6 +48,7 @@ export function CostBreakdown({
   currencySymbol,
   title = "Cost Breakdown",
   variant = "light",
+  postProcessMinutes = 0,
 }: Props) {
   const m = (n: number) => formatMoney(n, currencySymbol);
   const dark = variant === "dark";
@@ -79,6 +86,17 @@ export function CostBreakdown({
           <Row dark={dark} label="Consumables" value={m(breakdown.consumablesCost)} />
         ) : null}
         <Row dark={dark} label="Labor" value={m(breakdown.laborCost)} />
+        {breakdown.postProcessCost > 0 || postProcessMinutes > 0 ? (
+          <Row
+            dark={dark}
+            label={
+              postProcessMinutes > 0
+                ? `Post-processing (${formatMinutesDuration(postProcessMinutes)})`
+                : "Post-processing"
+            }
+            value={m(breakdown.postProcessCost)}
+          />
+        ) : null}
         <Row dark={dark} label="Machine" value={m(breakdown.machineCost)} />
         <Row dark={dark} label="Electricity" value={m(breakdown.electricityCost)} />
         <Row dark={dark} label="Landed Cost" value={m(breakdown.landed)} muted />

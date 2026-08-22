@@ -57,6 +57,7 @@ type PrintPayload = {
   sourceName?: string | null;
   printMinutes: number;
   laborMinutes: number;
+  postProcessMinutes?: number;
   addons?: AddonPayload[];
   materials: MaterialPayload[];
   plates?: PlatePayload[];
@@ -297,6 +298,7 @@ export async function action({ request }: Route.ActionArgs) {
       materials,
       printMinutes: p.printMinutes,
       laborMinutes: p.laborMinutes,
+      postProcessMinutes: p.postProcessMinutes ?? 0,
       addons,
       settings,
     });
@@ -312,10 +314,12 @@ export async function action({ request }: Route.ActionArgs) {
       sourceName: p.sourceName ?? null,
       printMinutes: p.printMinutes,
       laborMinutes: p.laborMinutes,
+      postProcessMinutes: p.postProcessMinutes ?? 0,
       addonsCost: breakdown.addonsCost,
       materialCost: breakdown.materialCost,
       electricityCost: breakdown.electricityCost,
       laborCost: breakdown.laborCost,
+      postProcessCost: breakdown.postProcessCost,
       machineCost: breakdown.machineCost,
       consumablesCost: breakdown.consumablesCost,
       landed: breakdown.landed,

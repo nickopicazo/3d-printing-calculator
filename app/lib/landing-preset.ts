@@ -28,6 +28,7 @@ export type LandingPreset = {
   printHours?: number;
   printMinutesPart?: number;
   laborMinutes?: number;
+  postProcessMinutes?: number;
   projectName?: string;
   printName?: string;
 };
@@ -75,6 +76,7 @@ export function applyLandingPreset(
     printHours: Math.max(0, preset?.printHours ?? 0),
     printMinutesPart: Math.max(0, preset?.printMinutesPart ?? 0),
     laborMinutes: Math.max(0, preset?.laborMinutes ?? 0),
+    postProcessMinutes: Math.max(0, preset?.postProcessMinutes ?? 0),
     addons: [],
     materials: [material],
     plates: [],
@@ -108,6 +110,7 @@ export function projectFromSharePayload(payload: {
         project.prints?.length > 0
           ? project.prints.map((p) => ({
               ...p,
+              postProcessMinutes: p.postProcessMinutes ?? 0,
               addons: p.addons ?? [],
               materials: p.materials ?? [],
               plates: (p.plates ?? []).map((plate) => ({

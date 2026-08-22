@@ -73,6 +73,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     technology: p.technology,
     printerName: p.printerName,
     printMinutes: p.printMinutes,
+    postProcessMinutes: p.postProcessMinutes,
     total: p.total,
     materials: materialRows
       .filter((m) => m.printId === p.id)
@@ -91,6 +92,8 @@ export async function loader({ request, params }: Route.LoaderArgs) {
       materialCost: acc.materialCost + p.materialCost,
       electricityCost: acc.electricityCost + p.electricityCost,
       laborCost: acc.laborCost + p.laborCost,
+      postProcessCost: acc.postProcessCost + p.postProcessCost,
+      postProcessMinutes: acc.postProcessMinutes + p.postProcessMinutes,
       machineCost: acc.machineCost + p.machineCost,
       addonsCost: acc.addonsCost + p.addonsCost,
       consumablesCost: acc.consumablesCost + p.consumablesCost,
@@ -103,6 +106,8 @@ export async function loader({ request, params }: Route.LoaderArgs) {
       materialCost: 0,
       electricityCost: 0,
       laborCost: 0,
+      postProcessCost: 0,
+      postProcessMinutes: 0,
       machineCost: 0,
       addonsCost: 0,
       consumablesCost: 0,

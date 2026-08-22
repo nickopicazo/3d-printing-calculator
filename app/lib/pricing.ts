@@ -47,6 +47,7 @@ export type PrintInput = {
   materials: MaterialLine[];
   printMinutes: number;
   laborMinutes: number;
+  postProcessMinutes?: number;
   addons: AddonLine[];
   settings: AppSettings;
 };
@@ -55,6 +56,7 @@ export type PrintBreakdown = {
   materialCost: number;
   electricityCost: number;
   laborCost: number;
+  postProcessCost: number;
   machineCost: number;
   addonsCost: number;
   consumablesCost: number;
@@ -86,6 +88,13 @@ export function minutesToHoursMinutes(totalMinutes: number): {
     hours: Math.floor(safe / 60),
     minutes: safe % 60,
   };
+}
+
+export function formatMinutesDuration(totalMinutes: number): string {
+  const { hours, minutes } = minutesToHoursMinutes(totalMinutes);
+  if (hours <= 0) return `${minutes}m`;
+  if (minutes <= 0) return `${hours}h`;
+  return `${hours}h ${minutes}m`;
 }
 
 function clampNonNeg(value: unknown): number {
@@ -124,13 +133,16 @@ export function calculatePrint(input: PrintInput): PrintBreakdown {
 
   const printHours = printMinutesToHours(input.printMinutes);
   const laborHours = printMinutesToHours(input.laborMinutes);
+  const postProcessHours = printMinutesToHours(input.postProcessMinutes ?? 0);
 
   const electricityCost =
     (clampNonNeg(settings.powerWatts) / 1000) *
     printHours *
     clampNonNeg(settings.electricityPerKwh);
 
-  const laborCost = laborHours * clampNonNeg(settings.laborRatePerHour);
+  const laborRate = clampNonNeg(settings.laborRatePerHour);
+  const laborCost = laborHours * laborRate;
+  const postProcessCost = postProcessHours * laborRate;
   const machineCost = printHours * clampNonNeg(settings.machineRatePerHour);
   const addonsCost = input.addons.reduce(
     (sum, line) => sum + addonCostForLine(line),
@@ -143,6 +155,7 @@ export function calculatePrint(input: PrintInput): PrintBreakdown {
     materialCost +
     electricityCost +
     laborCost +
+    postProcessCost +
     machineCost +
     addonsCost +
     consumablesCost;
@@ -164,6 +177,7 @@ export function calculatePrint(input: PrintInput): PrintBreakdown {
     materialCost,
     electricityCost,
     laborCost,
+    postProcessCost,
     machineCost,
     addonsCost,
     consumablesCost,
@@ -217,6 +231,7 @@ export function calculateProject(
     materialCost: 0,
     electricityCost: 0,
     laborCost: 0,
+    postProcessCost: 0,
     machineCost: 0,
     addonsCost: 0,
     consumablesCost: 0,
@@ -235,6 +250,7 @@ export function calculateProject(
       materialCost: acc.materialCost + b.materialCost,
       electricityCost: acc.electricityCost + b.electricityCost,
       laborCost: acc.laborCost + b.laborCost,
+      postProcessCost: acc.postProcessCost + b.postProcessCost,
       machineCost: acc.machineCost + b.machineCost,
       addonsCost: acc.addonsCost + b.addonsCost,
       consumablesCost: acc.consumablesCost + b.consumablesCost,
@@ -365,6 +381,7 @@ export function calculateQuote(input: {
     materials,
     printMinutes: input.printMinutes,
     laborMinutes: 0,
+    postProcessMinutes: 0,
     addons: [],
     settings: {
       currencyCode: "PHP",

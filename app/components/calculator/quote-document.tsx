@@ -1,4 +1,4 @@
-import { formatMoney } from "~/lib/pricing";
+import { formatMinutesDuration, formatMoney } from "~/lib/pricing";
 
 export type QuoteDocumentCustomer = {
   name: string;
@@ -13,6 +13,7 @@ export type QuoteDocumentPrint = {
   technology: string;
   printerName?: string | null;
   printMinutes: number;
+  postProcessMinutes?: number;
   total: number;
   materials: Array<{ label: string; quantity: number; unit: string }>;
   previewUrls: string[];
@@ -22,6 +23,8 @@ export type QuoteDocumentTotals = {
   materialCost: number;
   electricityCost: number;
   laborCost: number;
+  postProcessCost: number;
+  postProcessMinutes?: number;
   machineCost: number;
   addonsCost: number;
   consumablesCost?: number;
@@ -44,11 +47,7 @@ export type QuoteDocumentProps = {
 };
 
 function formatDuration(mins: number) {
-  const h = Math.floor(Math.max(0, mins) / 60);
-  const m = Math.max(0, mins) % 60;
-  if (h <= 0) return `${m}m`;
-  if (m <= 0) return `${h}h`;
-  return `${h}h ${m}m`;
+  return formatMinutesDuration(mins);
 }
 
 function Row({ label, value }: { label: string; value: string }) {
@@ -101,6 +100,13 @@ export function QuoteDocument({
     { label: "Machine", amount: totals.machineCost },
     { label: "Electricity", amount: totals.electricityCost },
     { label: "Labor", amount: totals.laborCost },
+    {
+      label:
+        (totals.postProcessMinutes ?? 0) > 0
+          ? `Post-processing (${formatDuration(totals.postProcessMinutes ?? 0)})`
+          : "Post-processing",
+      amount: totals.postProcessCost,
+    },
     { label: "Addons", amount: totals.addonsCost },
     { label: "Consumables", amount: totals.consumablesCost ?? 0 },
     { label: "Failure uplift", amount: totals.failureUplift },
@@ -383,6 +389,9 @@ export function QuoteDocument({
                       : ""}
                     {" · "}
                     {formatDuration(p.printMinutes)}
+                    {(p.postProcessMinutes ?? 0) > 0
+                      ? ` · ${formatDuration(p.postProcessMinutes ?? 0)} finishing`
+                      : ""}
                   </p>
                   {p.materials.length > 0 ? (
                     <p

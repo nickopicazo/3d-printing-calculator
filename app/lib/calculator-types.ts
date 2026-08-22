@@ -25,6 +25,7 @@ export type PrintDraft = {
   printHours: number;
   printMinutesPart: number;
   laborMinutes: number;
+  postProcessMinutes: number;
   addons: AddonLine[];
   materials: MaterialLine[];
   plates: PlateImport[];
@@ -69,6 +70,7 @@ export function emptyPrint(
     printHours: 0,
     printMinutesPart: 0,
     laborMinutes: 0,
+    postProcessMinutes: 0,
     addons: [],
     materials: [
       createEmptyMaterial(technology, price, undefined, ids?.materialId),

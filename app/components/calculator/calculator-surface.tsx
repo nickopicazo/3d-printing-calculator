@@ -144,6 +144,7 @@ export function CalculatorSurface({
         materials: p.materials,
         printMinutes: printDraftMinutes(p),
         laborMinutes: p.laborMinutes,
+        postProcessMinutes: p.postProcessMinutes,
         addons: p.addons,
         settings,
       },
@@ -510,6 +511,7 @@ export function CalculatorSurface({
                           breakdown={printCalc.breakdown}
                           currencySymbol={settings.currencyCode}
                           title="Print Cost"
+                          postProcessMinutes={print.postProcessMinutes}
                         />
                       ) : null}
                     </TabsContent>
@@ -536,6 +538,10 @@ export function CalculatorSurface({
             breakdown={projectCalc}
             currencySymbol={settings.currencyCode}
             variant="dark"
+            postProcessMinutes={project.prints.reduce(
+              (sum, p) => sum + p.postProcessMinutes,
+              0,
+            )}
             title={
               project.prints.length > 1
                 ? `Project Total (${project.prints.length} Prints)`

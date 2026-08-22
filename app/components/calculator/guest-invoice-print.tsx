@@ -42,6 +42,7 @@ export function GuestInvoicePrint({
       technology: p.technology,
       printerName: p.printerName,
       printMinutes: printDraftMinutes(p),
+      postProcessMinutes: p.postProcessMinutes,
       total: breakdowns.find((x) => x.id === p.id)?.breakdown.total ?? 0,
       materials: p.materials.map((mat) => ({
         label: mat.label || mat.type || "Material",
@@ -56,6 +57,11 @@ export function GuestInvoicePrint({
       materialCost: rolled.materialCost,
       electricityCost: rolled.electricityCost,
       laborCost: rolled.laborCost,
+      postProcessCost: rolled.postProcessCost,
+      postProcessMinutes: prints.reduce(
+        (sum, p) => sum + p.postProcessMinutes,
+        0,
+      ),
       machineCost: rolled.machineCost,
       addonsCost: rolled.addonsCost,
       consumablesCost: rolled.consumablesCost,

@@ -218,6 +218,7 @@ export default function Home() {
             sourceName: string | null;
             printMinutes: number;
             laborMinutes: number;
+            postProcessMinutes?: number;
             addons?: Array<{
               id: string;
               name: string;
@@ -254,6 +255,7 @@ export default function Home() {
               printHours: hm.hours,
               printMinutesPart: hm.minutes,
               laborMinutes: p.laborMinutes,
+              postProcessMinutes: p.postProcessMinutes ?? 0,
               addons: (p.addons ?? []).map((a) => ({
                 id: a.id,
                 name: a.name ?? "",
@@ -328,6 +330,7 @@ export default function Home() {
         materials: p.materials,
         printMinutes: printDraftMinutes(p),
         laborMinutes: p.laborMinutes,
+        postProcessMinutes: p.postProcessMinutes,
         addons: p.addons,
         settings,
       },
@@ -490,6 +493,7 @@ export default function Home() {
             sourceName: p.sourceName,
             printMinutes: printDraftMinutes(p),
             laborMinutes: p.laborMinutes,
+            postProcessMinutes: p.postProcessMinutes,
             addons: p.addons,
             materials: p.materials,
             plates: p.plates
@@ -1006,6 +1010,7 @@ export default function Home() {
                           breakdown={printCalc.breakdown}
                           currencySymbol={settings.currencyCode}
                           title="Print Cost"
+                          postProcessMinutes={print.postProcessMinutes}
                         />
                       ) : null}
                     </TabsContent>
@@ -1046,6 +1051,10 @@ export default function Home() {
               breakdown={projectCalc}
               currencySymbol={settings.currencyCode}
               variant="dark"
+              postProcessMinutes={project.prints.reduce(
+                (sum, p) => sum + p.postProcessMinutes,
+                0,
+              )}
               title={
                 project.prints.length > 1
                   ? `Project Total (${project.prints.length} Prints)`
